@@ -1,0 +1,13 @@
+Test Content for Upload
+
+This is a simple test file to verify that:
+1. File upload works
+2. Text extraction works
+3. Content display works
+
+Company Information:
+- Name: Test Company
+- Industry: Technology
+- Location: San Francisco
+
+This should appear in the extracted content area when uploaded. 

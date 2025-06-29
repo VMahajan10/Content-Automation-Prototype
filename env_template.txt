@@ -14,10 +14,21 @@ CANVA_API_KEY=your_canva_api_key_here
 CANVA_CLIENT_ID=your_canva_client_id_here
 CANVA_CLIENT_SECRET=your_canva_client_secret_here
 
+# Miro API Credentials (for AI mind map generation)
+MIRO_API_KEY=your_miro_api_key_here
+MIRO_ACCESS_TOKEN=your_miro_access_token_here
+
 # Alternative Voice APIs (if needed in the future)
 # ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
 # AZURE_SPEECH_KEY=your_azure_speech_key_here
 # GOOGLE_CLOUD_TTS_KEY=your_google_cloud_tts_key_here
 
 # Database Encryption Key (for Canva Connect API)
-DATABASE_ENCRYPTION_KEY=your_database_encryption_key_here 
+DATABASE_ENCRYPTION_KEY=your_database_encryption_key_here
+
+# Instructions for Miro AI Integration:
+# 1. Get your Miro API key from: https://developers.miro.com/
+# 2. Create a Miro app in the developer console
+# 3. Generate an access token with appropriate permissions
+# 4. The app will use Miro's AI assistant to create professional mind maps
+# 5. All your training context, files, and collaboration info will be fed to the AI 

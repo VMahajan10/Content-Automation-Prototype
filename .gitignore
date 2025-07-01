@@ -39,4 +39,7 @@ env/
 
 # OS
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# Ignore Streamlit secrets
+.streamlit/secrets.toml 

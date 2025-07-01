@@ -42,4 +42,4 @@ env/
 Thumbs.db
 
 # Ignore Streamlit secrets
-.streamlit/secrets.toml 
+.streamlit/secrets.toml .env.backup

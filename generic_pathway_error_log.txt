@@ -1,0 +1,77 @@
+Generic Pathway JSON Error: Extra data: line 75 column 1 (char 5032)
+Raw Response:
+{
+    "pathway_name": "New Tech Employee Onboarding Pathway",
+    "sections": [
+        {
+            "title": "Week 1: Welcome & Foundations",
+            "description": "Your first week is focused on getting you settled in, understanding our company culture, and completing essential administrative and system setup tasks.",
+            "modules": [
+                {
+                    "title": "Company Culture & Values",
+                    "description": "An introduction to our company's mission, vision, and core values.",
+                    "content": "Based on the Employee Handbook, this module covers: understanding our mission and history, reviewing our core values and communication norms, and getting an overview of the organizational structure."
+                },
+                {
+                    "title": "HR & Administrative Onboarding",
+                    "description": "Complete all necessary HR paperwork and learn about benefits and payroll.",
+                    "content": "Using the Onboarding Checklist and Procedures, you will: complete all required employment forms (I-9, W-4), review the benefits package, and understand the payroll schedule and time-off policies outlined in the Employee Handbook."
+                },
+                {
+                    "title": "Tools & Systems Setup",
+                    "description": "Get access to and set up the essential software and hardware for your role.",
+                    "content": "Follow the Onboarding Procedures to set up your company laptop, email, communication platforms (e.g., Slack, Teams), and project management tools. Configure your security settings and two-factor authentication."
+                }
+            ]
+        },
+        {
+            "title": "Week 2: Core Processes & Safety",
+            "description": "Learn about our key operational processes, security protocols, and mandatory safety procedures.",
+            "modules": [
+                {
+                    "title": "Understanding Core Workflows",
+                    "description": "An overview of our standard operating procedures and project methodologies.",
+                    "content": "Review the Process Documents to understand our development lifecycle, product cycle, and how to use our project tracking tools for tasks and reporting."
+                },
+                {
+                    "title": "Information Security Best Practices",
+                    "description": "Understand your responsibility in protecting company and customer data.",
+                    "content": "Review the 'Information Security' policy in the Employee Handbook. This module covers data classification, acceptable use policies, and how to report a security incident."
+                },
+                {
+                    "title": "Workplace Health & Safety",
+                    "description": "Complete mandatory safety training to ensure a secure work environment.",
+                    "content": "Complete all required Safety Modules. Topics include ergonomics for your workspace, emergency evacuation procedures, and incident reporting protocols as detailed in the Onboarding Procedures."
+                }
+            ]
+        },
+        {
+            "title": "Weeks 3-4: Role & Team Integration",
+            "description": "Dive deeper into your specific role, meet your team, and start contributing to your first projects.",
+            "modules": [
+                {
+                    "title": "Your Role and Responsibilities",
+                    "description": "Clarify your role's responsibilities, key performance indicators (KPIs), and how you contribute to the team's success.",
+                    "content": "Meet with your manager to discuss your specific responsibilities. Schedule 1-on-1 meetings with key team members. Review the team's goals and your alignment with them."
+                },
+                {
+                    "title": "Your First Assignments",
+                    "description": "Begin working on initial tasks to get familiar with our systems and team dynamics.",
+                    "content": "Receive and understand your first set of tasks using our project management system. Learn the process for code reviews, pull requests, and/or documentation submission as outlined in the Process Documents."
+                }
+            ]
+        },
+        {
+            "title": "First 90 Days: Continued Growth",
+            "description": "Focus on long-term success through regular check-ins, feedback, and professional development.",
+            "modules": [
+                {
+                    "title": "30-60-90 Day Check-ins",
+                    "description": "Formal check-in points with your manager to review progress and set goals.",
+                    "content": "Use the Onboarding Checklist as a guide to prepare for your 30, 60, and 90-day check-in meetings. Discuss accomplishments, challenges, and refine goals for the next period."
+                }
+            ]
+        }
+    ]
+}
+```

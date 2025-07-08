@@ -16,9 +16,6 @@ import tempfile
 import os
 import mimetypes
 import google.generativeai as genai
-import subprocess
-import threading
-import atexit
 try:
     import ffmpeg
 except ImportError:
@@ -28,75 +25,6 @@ except ImportError:
 from modules.config import *
 from modules.utils import extract_key_topics_from_content, calculate_text_dimensions, gemini_generate_module_description, gemini_group_modules_into_sections
 from markmap_component import markmap
-
-# Global variable to track backend process
-backend_process = None
-
-def start_backend_server():
-    """Start the backend server in a separate process"""
-    global backend_process
-    try:
-        # Check if backend is already running
-        try:
-            response = requests.get("http://localhost:8000/health", timeout=3)
-            if response.status_code == 200:
-                st.success("✅ Backend server is already running")
-                return True
-        except:
-            pass
-        
-        # Start backend server
-        st.info("🚀 Starting backend server...")
-        backend_process = subprocess.Popen(
-            ["python", "upload_backend.py"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        
-        # Wait for server to start with better timeout
-        st.info("⏳ Waiting for backend server to start...")
-        for i in range(10):
-            time.sleep(1)
-            try:
-                response = requests.get("http://localhost:8000/health", timeout=3)
-                if response.status_code == 200:
-                    st.success("✅ Backend server started successfully")
-                    return True
-            except:
-                if i < 5:
-                    st.info(f"⏳ Waiting for backend... ({i+1}/10)")
-                else:
-                    st.info(f"⏳ Backend is taking longer than expected... ({i+1}/10)")
-        
-        # If we get here, backend didn't start
-        st.error("❌ Backend server failed to start within timeout")
-        if backend_process:
-            backend_process.terminate()
-            try:
-                backend_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                backend_process.kill()
-        return False
-            
-    except Exception as e:
-        st.error(f"❌ Failed to start backend server: {str(e)}")
-        return False
-
-def stop_backend_server():
-    """Stop the backend server"""
-    global backend_process
-    if backend_process:
-        try:
-            backend_process.terminate()
-            backend_process.wait(timeout=5)
-            st.info("🛑 Backend server stopped")
-        except:
-            backend_process.kill()
-        backend_process = None
-
-# Register cleanup function
-atexit.register(stop_backend_server)
 
 # Page configuration
 st.set_page_config(
@@ -108,10 +36,6 @@ st.set_page_config(
 
 # Main application
 def main():
-    # Start backend server automatically
-    if not start_backend_server():
-        st.warning("⚠️ Backend server could not be started. Some features may not work properly.")
-    
     st.title("🚀 Gateway Content Automation")
     st.markdown("### AI-Powered Training Content Generation & Mind Mapping")
     
@@ -638,11 +562,6 @@ def show_training_discovery_page():
         if st.session_state.get('processed_backend_files'):
             all_files_to_process.extend(st.session_state.processed_backend_files)
         
-        st.write(f"🔍 **File Processing Debug:**")
-        st.write(f"Uploaded files: {[f.name for f in uploaded_files] if uploaded_files else 'None'}")
-        st.write(f"Processed backend files: {[f.name for f in st.session_state.get('processed_backend_files', [])] if st.session_state.get('processed_backend_files') else 'None'}")
-        st.write(f"All files to process: {[f.name for f in all_files_to_process] if all_files_to_process else 'None'}")
-        
         if all_files_to_process:
             st.markdown("#### 📂 Categorize Your Files")
             file_categories = {}
@@ -784,12 +703,6 @@ def show_training_discovery_page():
             'technical_docs': technical_docs
         })
         
-        st.write(f"📝 **Manual Inventory Debug:**")
-        st.write(f"Process docs: '{process_docs[:100] if process_docs else 'None'}...'")
-        st.write(f"Training materials: '{training_materials[:100] if training_materials else 'None'}...'")
-        st.write(f"Policies: '{policies[:100] if policies else 'None'}...'")
-        st.write(f"Technical docs: '{technical_docs[:100] if technical_docs else 'None'}...'")
-        
         # Show current inventory summary
         st.markdown("#### 📋 Current Inventory Summary")
         inventory_summary = []
@@ -818,14 +731,8 @@ def show_training_discovery_page():
             st.session_state.file_inventory.get('technical_docs')
         ]):
             st.markdown("---")
-            st.markdown("### 🛤️ Ready to Generate Goal-Aligned Pathways")
-            st.markdown("You have files and content available. Generate AI-powered pathways that align with your training goals!")
-            
-            # Show training goals for reference
-            if st.session_state.training_context.get('primary_goals'):
-                st.info(f"🎯 **Your Training Goals:** {st.session_state.training_context['primary_goals']}")
-            if st.session_state.training_context.get('success_metrics'):
-                st.info(f"📊 **Your Success Metrics:** {st.session_state.training_context['success_metrics']}")
+            st.markdown("### 🛤️ Ready to Generate Pathways")
+            st.markdown("You have files and content available. Generate AI-powered pathways based on your content!")
             
             col1, col2, col3 = st.columns(3)
             with col1:
@@ -834,12 +741,12 @@ def show_training_discovery_page():
                     st.rerun()
             
             with col2:
-                if st.button("🤖 Generate Goal-Aligned Pathways", type="primary"):
+                if st.button("🤖 Generate Pathways Now", type="primary"):
                     st.session_state.discovery_step = 3
                     st.rerun()
         
             with col3:
-                st.info("💡 Content will be filtered to match your training objectives")
+                st.info("💡 Your files will be processed and used to generate contextual pathways")
         else:
             col1, col2 = st.columns(2)
             with col1:
@@ -854,226 +761,82 @@ def show_training_discovery_page():
         
         # --- SUGGESTED PATHWAYS SECTION (moved to its own step) ---
 
-    # Step 3: Generate Pathways
+    # Step 3: Suggested Pathways (new step, replaces Collaboration Planning and Mind Map)
     elif st.session_state.discovery_step == 3:
-        st.subheader("🛤️ Generate Training Pathways")
+        st.subheader("🛤️ Suggested Pathways")
         context = st.session_state.get('training_context', {})
         inventory = st.session_state.get('file_inventory', {})
         extracted_file_contents = st.session_state.get('extracted_file_contents', {})
         
-        st.write(f"🔍 **Step 3 Debug:**")
-        st.write(f"Context keys: {list(context.keys())}")
-        st.write(f"Inventory keys: {list(inventory.keys())}")
-        st.write(f"Extracted files keys: {list(extracted_file_contents.keys())}")
-        st.write(f"Session state keys: {list(st.session_state.keys())}")
+        # Debug information
+        st.markdown("**Debug Info:**")
+        st.write(f"Training Context: {context}")
+        st.write(f"File Inventory: {inventory}")
+        st.write(f"Extracted Files: {list(extracted_file_contents.keys())}")
         
-        # Add backend file processing
-        st.markdown("### 📁 Process Backend Files")
-        if st.button("🔄 Process Backend Files Now"):
-            with st.spinner("Processing backend files..."):
-                try:
-                    response = requests.get("http://localhost:8000/files/")
-                    if response.status_code == 200:
-                        backend_files = response.json().get('files', [])
-                        st.write(f"📁 Found {len(backend_files)} files in backend")
-                        
-                        processed_files = {}
-                        for file_info in backend_files:
-                            st.write(f"📄 Processing: {file_info['filename']}")
-                            try:
-                                # Download file from backend
-                                download_response = requests.get(f"http://localhost:8000/files/{file_info['filename']}/download")
-                                if download_response.status_code == 200:
-                                    # Extract content based on file type
-                                    filename = file_info['filename']
-                                    content = ""
-                                    
-                                    if filename.lower().endswith('.txt'):
-                                        content = download_response.text
-                                    elif filename.lower().endswith('.mp4'):
-                                        # For video files, we'll need to transcribe
-                                        st.write(f"🎥 Video file detected: {filename}")
-                                        content = f"[Video file: {filename} - Transcription needed]"
-                                    else:
-                                        content = download_response.text
-                                    
-                                    if content and len(content.strip()) > 50:
-                                        processed_files[filename] = content
-                                        st.write(f"✅ Processed {filename} ({len(content)} characters)")
-                                    else:
-                                        st.write(f"⚠️ {filename} has insufficient content")
-                                else:
-                                    st.write(f"❌ Failed to download {filename}")
-                            except Exception as e:
-                                st.write(f"❌ Error processing {file_info['filename']}: {str(e)}")
-                        
-                        # Update session state with processed files
-                        if processed_files:
-                            st.session_state['extracted_file_contents'] = processed_files
-                            st.success(f"✅ Successfully processed {len(processed_files)} backend files!")
-                            st.rerun()
-                        else:
-                            st.warning("No files could be processed successfully")
-                    else:
-                        st.error("Failed to fetch backend files")
-                except Exception as e:
-                    st.error(f"Error processing backend files: {str(e)}")
+        # Show extracted content from files
+        if extracted_file_contents:
+            with st.expander("📄 View Extracted Content from Files"):
+                st.markdown("**Content that will be used to generate modules:**")
+                for filename, content in extracted_file_contents.items():
+                    if content and len(content.strip()) > 50:
+                        st.markdown(f"### {filename}")
+                        st.markdown(f"**Content Preview:** {content[:500]}...")
+                        st.markdown("---")
         
-        st.markdown("### Generate Your Semantically Aligned Pathway")
-        st.markdown("Click the button below to generate a pathway using AI based on your training context and content. Content will be analyzed semantically to identify topics relevant to your training goals.")
+        # Check if we need to regenerate pathway due to new files
+        # Include both regular uploaded files and processed backend files
+        all_files = list(extracted_file_contents.keys())
+        if st.session_state.get('processed_backend_files'):
+            all_files.extend([f.name for f in st.session_state.processed_backend_files])
         
-        # Show training goals for reference
-        if context.get('primary_goals'):
-            st.info(f"🎯 **Your Training Goals:** {context['primary_goals']}")
-        if context.get('success_metrics'):
-            st.info(f"📊 **Your Success Metrics:** {context['success_metrics']}")
+        current_file_count = len(set(all_files))  # Remove duplicates
+        if 'last_file_count' not in st.session_state:
+            st.session_state['last_file_count'] = 0
         
-        # Add option to bypass filtering
-        bypass_filtering = st.checkbox(
-            "Include all file content (bypass goal alignment)",
-            help="If checked, all content from files will be included regardless of relevance to training goals"
-        )
+        # If new files were added, clear the generated pathway to force regeneration
+        if current_file_count > st.session_state['last_file_count'] and 'generated_pathway' in st.session_state:
+            st.info("🔄 New files detected! You may want to regenerate your pathway to include the new content.")
+            if st.button("🔄 Regenerate Pathway with New Files"):
+                del st.session_state['generated_pathway']
+                del st.session_state['editable_pathways']
+                st.session_state['last_file_count'] = current_file_count
+                st.rerun()
         
-        # Show goal alignment information
-        st.info("🎯 **Goal Alignment:** Content will be filtered to match your specific training goals and objectives")
-        if context.get('primary_goals'):
-            st.write(f"**Your Goals:** {context['primary_goals']}")
-        if context.get('training_type'):
-            st.write(f"**Training Type:** {context['training_type']}")
-        if context.get('target_audience'):
-            st.write(f"**Target Audience:** {context['target_audience']}")
+        # Update file count
+        st.session_state['last_file_count'] = current_file_count
         
-        # Add quick test mode for faster processing
-        quick_test_mode = st.checkbox(
-            "Quick Test Mode (skip AI analysis for speed)",
-            help="For testing purposes - skips AI analysis and uses basic content extraction for maximum speed"
-        )
+        # --- Always show pathway generation section ---
+        st.markdown("### Generate Your Pathway")
+        st.markdown("Click the button below to generate a pathway using AI based on your training context and content.")
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("🤖 Generate Goal-Aligned Pathway", type="primary"):
-                # Clear previous errors
-                if 'ai_errors' in st.session_state:
-                    del st.session_state['ai_errors']
-                
-                st.write("🔍 **Debug Info:**")
-                st.write(f"Training Context: {context}")
-                st.write(f"File Inventory: {inventory}")
-                st.write(f"Extracted Files: {list(extracted_file_contents.keys())}")
-                st.write(f"Number of files with content: {len([c for c in extracted_file_contents.values() if c and len(c.strip()) > 50])}")
-                
-                if quick_test_mode:
-                    st.info("⚡ **Quick Test Mode Enabled**")
-                    st.write("• Skipping AI analysis for maximum speed")
-                    st.write("• Using basic content extraction")
-                    st.write("• Estimated time: 5-10 seconds")
-                    
-                    with st.spinner("⚡ Quick processing (bypassing AI analysis)..."):
-                        try:
-                            from modules.utils import create_quick_pathway
-                            st.write("📞 Creating quick pathway...")
+            if st.button("🤖 Generate Pathway with AI", type="primary"):
+                with st.spinner("🤖 Generating pathway with AI..."):
+                    from modules.utils import gemini_generate_complete_pathway
+                    try:
+                        generated_pathway = gemini_generate_complete_pathway(context, extracted_file_contents, inventory)
+                        if generated_pathway:
+                            st.session_state['generated_pathway'] = generated_pathway
                             
-                            generated_pathways_data = create_quick_pathway(context, extracted_file_contents, inventory)
-                            st.write(f"📋 Quick Response: {generated_pathways_data}")
+                            # Count modules extracted from files
+                            total_modules = sum(len(section.get('modules', [])) for section in generated_pathway.get('sections', []))
+                            st.success(f"✅ Pathway generated successfully! Created {total_modules} modules from your uploaded content.")
                             
-                            if generated_pathways_data:
-                                st.session_state['generated_pathway'] = generated_pathways_data
-                                st.success("✅ Quick pathway generated successfully!")
-                                st.rerun()
-                            else:
-                                st.error("❌ Quick pathway generation failed")
-                        except Exception as e:
-                            st.error(f"❌ Quick pathway error: {str(e)}")
-                            st.session_state['ai_errors'] = {
-                                'error': str(e),
-                                'type': type(e).__name__,
-                                'traceback': str(e)
-                            }
-                else:
-                    # Add parallel processing status
-                    st.info("🚀 **Goal-Aligned Processing Enabled**")
-                    st.write("• Content will be filtered to match your specific training goals")
-                    st.write("• Multiple AI agents will process files simultaneously")
-                    st.write("• Only training-relevant information will be extracted")
-                    st.write("• Titles, descriptions, and content will be aligned with your goals")
-                    st.write("• Video files are processed separately to avoid timeouts")
-                    
-                    with st.spinner("🤖 Generating goal-aligned pathway with AI (parallel processing enabled)..."):
-                        try:
-                            from modules.utils import gemini_generate_complete_pathway, get_parallel_config
-                            st.write("📞 Calling AI function...")
+                            # Show which files contributed to the pathway
+                            if extracted_file_contents:
+                                st.info(f"📁 Modules were generated from {len(extracted_file_contents)} files including video transcriptions and document content.")
                             
-                            # Show parallel configuration
-                            config = get_parallel_config()
-                            st.write(f"⚙️ **Parallel Configuration:**")
-                            st.write(f"   Max File Workers: {config['max_file_workers']}")
-                            st.write(f"   Max Section Workers: {config['max_section_workers']}")
-                            st.write(f"   Timeout: {config['timeout_seconds']} seconds")
-                            
-                            # Pass the bypass filtering option
-                            if bypass_filtering:
-                                st.info("🔄 Bypassing goal alignment - including all file content")
-                            else:
-                                st.info("🎯 Using goal alignment - filtering content to match your training objectives")
-                            
-                            generated_pathways_data = gemini_generate_complete_pathway(context, extracted_file_contents, inventory, bypass_filtering=bypass_filtering)
-                            st.write(f"📋 AI Response: {generated_pathways_data}")
-                            
-                            if generated_pathways_data:
-                                st.session_state['generated_pathway'] = generated_pathways_data
-                                st.success("✅ Goal-aligned pathway generated successfully!")
-                                st.rerun()
-                            else:
-                                st.error("❌ AI returned None or empty response")
-                                st.info("💡 This might mean:")
-                                st.info("• No content was extracted from files")
-                                st.info("• AI couldn't process the content")
-                                st.info("• API call failed silently")
-                        except Exception as e:
-                            error_msg = f"❌ Exception during AI generation: {str(e)}"
-                            st.error(error_msg)
-                            st.code(f"Error details: {type(e).__name__}: {str(e)}")
-                            import traceback
-                            full_traceback = traceback.format_exc()
-                            st.code(full_traceback)
-                            
-                            # Store error in session state for persistence
-                            st.session_state['ai_errors'] = {
-                                'error': str(e),
-                                'type': type(e).__name__,
-                                'traceback': full_traceback
-                            }
-                            
-                            # Also write error to file for debugging
-                            try:
-                                with open('ai_error_log.txt', 'w') as f:
-                                    f.write(f"Error Type: {type(e).__name__}\n")
-                                    f.write(f"Error Message: {str(e)}\n")
-                                    f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
-                                    f.write(f"Full Traceback:\n{full_traceback}\n")
-                                st.info("📝 Error logged to 'ai_error_log.txt' file")
-                            except:
-                                pass
-        
-        # Show persistent errors if they exist
-        if 'ai_errors' in st.session_state:
-            st.error("🚨 **Previous Error (from last attempt):**")
-            st.write(f"**Error Type:** {st.session_state['ai_errors']['type']}")
-            st.write(f"**Error Message:** {st.session_state['ai_errors']['error']}")
-            st.code(st.session_state['ai_errors']['traceback'])
-            
-            # Add specific help for rate limit errors
-            if '429' in st.session_state['ai_errors']['error'] or 'quota' in st.session_state['ai_errors']['error'].lower():
-                st.warning("⚠️ **API Rate Limit Hit**")
-                st.write("You've exceeded your Gemini API daily quota. Try these options:")
-                st.write("• **Use Quick Test Mode** (checkbox above) - works without AI")
-                st.write("• **Wait 24 hours** for quota reset")
-                st.write("• **Upgrade your Gemini API plan** for higher limits")
-                st.write("• **Check your billing** at https://ai.google.dev/")
-            
-            if st.button("🗑️ Clear Error Log"):
-                del st.session_state['ai_errors']
-                st.rerun()
+                            st.rerun()
+                    except Exception as e:
+                        st.error(f"Error during AI pathway generation: {str(e)}")
+                        st.markdown("**Troubleshooting:**")
+                        st.markdown("- Make sure you've filled out the training context")
+                        st.markdown("- Ensure you have uploaded files or provided manual inventory")
+                        st.markdown("- Check that your Gemini API key is valid")
+                        if st.button("Retry AI Generation"):
+                            st.rerun()
         
         with col2:
             st.markdown("**AI-Powered Pathways**")
@@ -1083,39 +846,23 @@ def show_training_discovery_page():
             st.markdown("• Based on your specific content")
             st.markdown("• Adaptable to your company size")
         
-        # --- Display generated pathway(s) ---
+        # If no pathway generated yet, show message and return
         if 'generated_pathway' not in st.session_state:
-            st.error("No pathway generated yet. Please click the 'Generate Semantically Aligned Pathway' button above.")
+            st.info("👆 Click the 'Generate Pathway with AI' button above to create your pathway.")
             return
         
-        generated_pathways_data = st.session_state['generated_pathway']
-        if not generated_pathways_data or 'pathways' not in generated_pathways_data or not generated_pathways_data['pathways']:
-            st.error("No pathways found in the AI response.")
+        # --- Display generated pathway ---
+        if 'generated_pathway' not in st.session_state:
+            st.error("No pathway generated yet. Please click the 'Generate Pathway with AI' button above.")
             return
-        pathways = generated_pathways_data['pathways']
-        pathway_names = [p['pathway_name'] for p in pathways]
         
-        # Pathways UI navigation state
-        if 'selected_pathway_idx' not in st.session_state:
-            st.session_state['selected_pathway_idx'] = 0
-        if 'selected_section' not in st.session_state:
-            st.session_state['selected_section'] = None
+        generated_pathway = st.session_state['generated_pathway']
+        pathway_name = generated_pathway['pathway_name']
         
-        # Show pathway cards for all pathways
-        st.markdown(f"### 🎯 **Select a Pathway**")
-        cols = st.columns(len(pathway_names))
-        for idx, pname in enumerate(pathway_names):
-            with cols[idx]:
-                if st.button(f"Pathway {idx+1}: {pname}", key=f"pathway_card_{idx}"):
-                    st.session_state['selected_pathway_idx'] = idx
-                    st.session_state['selected_section'] = None
-        selected_pathway = pathways[st.session_state['selected_pathway_idx']]
-        st.markdown(f"### 🎯 **{selected_pathway['pathway_name']}**")
-        st.markdown("This goal-aligned pathway is designed based on your specific training goals and available content. Content has been filtered and structured to directly support your training objectives.")
-        # --- Convert pathway to editable format ---
-        if 'editable_pathways' not in st.session_state or st.session_state.get('editable_pathways_pathway_idx', -1) != st.session_state['selected_pathway_idx']:
+        # --- Convert Gemini pathway to editable format ---
+        if 'editable_pathways' not in st.session_state:
             editable_pathways = {}
-            for section in selected_pathway['sections']:
+            for section in generated_pathway['sections']:
                 section_title = section['title']
                 editable_pathways[section_title] = []
                 for module in section['modules']:
@@ -1126,27 +873,52 @@ def show_training_discovery_page():
                         'source': ['AI Generated']
                     })
             st.session_state['editable_pathways'] = editable_pathways
-            st.session_state['editable_pathways_pathway_idx'] = st.session_state['selected_pathway_idx']
+        
         editable_pathways = st.session_state['editable_pathways']
+        
+        # Display pathway information
+        st.markdown(f"### 🎯 **{pathway_name}**")
+        st.markdown("This AI-generated pathway is designed based on your training context and available content.")
+        
+        # Pathways UI navigation state
+        if 'selected_pathway' not in st.session_state:
+            st.session_state['selected_pathway'] = None
+        if 'selected_section' not in st.session_state:
+            st.session_state['selected_section'] = None
+        
+        # Show pathway card (for now, only one pathway)
+        pathway_names = [pathway_name]  # For future: support multiple pathways
+        cols = st.columns(len(pathway_names))
+        for idx, pname in enumerate(pathway_names):
+            with cols[idx]:
+                if st.button(f"Pathway {idx+1}: {pname}", key=f"pathway_card_{idx}"):
+                    st.session_state['selected_pathway'] = pname
+                    st.session_state['selected_section'] = None
+        
         # Show sections if pathway selected
-        section_names = list(editable_pathways.keys())
-        st.markdown(f"### Sections in Pathway {st.session_state['selected_pathway_idx']+1}: {selected_pathway['pathway_name']}")
-        for idx, section in enumerate(section_names):
-            # Find section description from generated pathway
-            section_desc = ""
-            for gen_section in selected_pathway['sections']:
-                if gen_section['title'] == section:
-                    section_desc = gen_section.get('description', '')
-                    break
-            col1, col2 = st.columns([3, 1])
-            with col1:
-                st.markdown(f"**Section {idx+1}: {section}**")
-                if section_desc:
-                    st.markdown(f"*{section_desc}*")
-            with col2:
-                if st.button(f"View Modules", key=f"section_card_{section}"):
-                    st.session_state['selected_section'] = section
-            st.markdown("---")
+        if st.session_state['selected_pathway']:
+            st.markdown(f"### Sections in Pathway {pathway_names.index(st.session_state['selected_pathway'])+1}: {st.session_state['selected_pathway']}")
+            section_names = list(editable_pathways.keys())
+            
+            # Display sections with descriptions
+            for idx, section in enumerate(section_names):
+                # Find section description from generated pathway
+                section_desc = ""
+                for gen_section in generated_pathway['sections']:
+                    if gen_section['title'] == section:
+                        section_desc = gen_section.get('description', '')
+                        break
+                
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.markdown(f"**Section {idx+1}: {section}**")
+                    if section_desc:
+                        st.markdown(f"*{section_desc}*")
+                with col2:
+                    if st.button(f"View Modules", key=f"section_card_{section}"):
+                        st.session_state['selected_section'] = section
+                st.markdown("---")
+        
         # Show modules if section selected
         if st.session_state['selected_section']:
             section = st.session_state['selected_section']
@@ -1193,8 +965,9 @@ def show_training_discovery_page():
                 mod['content'] = new_content
                 st.markdown(f"_Description: {mod['description']}_")
                 st.markdown(f"_Source: {', '.join(mod['source'])}_")
-                st.markdown("---")
+                            st.markdown("---")
                 i += 1
+            
         # --- Export and Save Buttons ---
         st.markdown("---")
         col1, col2, col3, col4, col5 = st.columns(5)
@@ -1202,65 +975,62 @@ def show_training_discovery_page():
             if st.button("← Back to File Upload"):
                 st.session_state.discovery_step = 2
                 st.rerun()
+        
         with col2:
             if st.button("🔄 Regenerate Pathway"):
                 del st.session_state['generated_pathway']
                 del st.session_state['editable_pathways']
                 st.rerun()
+        
         with col3:
             if st.button("🤖 Generate New Pathway"):
                 del st.session_state['generated_pathway']
                 del st.session_state['editable_pathways']
                 st.rerun()
+        
         with col4:
             if st.button("Export Pathways as JSON"):
                 import json
                 export_data = {
-                    'pathways': [
+                    'pathway': pathway_name,
+                    'sections': [
                         {
-                            'pathway_name': p['pathway_name'],
-                            'sections': [
-                                {
-                                    'name': section,
-                                    'modules': [
-                                        {'title': m['title'], 'content': m['content'], 'source': m['source']}
-                                        for m in editable_pathways[section]
-                                    ]
-                                } for section in editable_pathways.keys()
+                            'name': section,
+                            'modules': [
+                                {'title': m['title'], 'content': m['content'], 'source': m['source']}
+                                for m in mods
                             ]
-                        } for p in pathways
+                        } for section, mods in editable_pathways.items()
                     ]
                 }
                 json_str = json.dumps(export_data, indent=2)
                 st.download_button(
                     label="Download JSON",
                     data=json_str,
-                    file_name=f"onboarding_pathways_all.json",
+                    file_name=f"onboarding_pathways_{pathway_name.replace(' ', '_')}.json",
                     mime="application/json"
                 )
         with col5:
             if st.button("Save Pathways"):
                 st.session_state['confirmed_pathways'] = {
-                    'pathways': [
+                    'pathway': pathway_name,
+                    'sections': [
                         {
-                            'pathway_name': selected_pathway['pathway_name'],
-                            'sections': [
-                                {
-                                    'name': section,
-                                    'modules': [
-                                        {'title': m['title'], 'content': m['content'], 'source': m['source']}
-                                        for m in editable_pathways[section]
-                                    ]
-                                } for section in editable_pathways.keys()
+                            'name': section,
+                            'modules': [
+                                {'title': m['title'], 'content': m['content'], 'source': m['source']}
+                                for m in mods
                             ]
-                        }
+                        } for section, mods in editable_pathways.items()
                     ]
                 }
                 st.success("Pathways saved! You can now generate multimedia content.")
                 st.session_state['show_generate_multimedia'] = True
+        
         if st.session_state.get('show_generate_multimedia') and st.session_state.get('confirmed_pathways'):
             if st.button("Generate Multimedia Content for Modules"):
                 st.session_state['generate_multimedia_triggered'] = True
+        
         if st.session_state.get('generate_multimedia_triggered'):
             st.markdown("---")
             st.subheader("🎬 Multimedia Content Generation (Coming Soon)")

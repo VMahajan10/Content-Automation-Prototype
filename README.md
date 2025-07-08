@@ -11,6 +11,20 @@ An AI-powered content generation app that creates comprehensive training materia
 - **🎥 Interactive Video Creation**: Generate AI videos with voiceover and custom settings
 - **🃏 Interactive Flashcards**: Learn with AI-generated flashcards
 - **🎨 Visual Resources**: Get suggestions for visual learning materials
+- **🚀 Automatic Backend Management**: Backend server starts automatically with the app
+- **📁 Large File Support**: Handle files larger than 200MB via backend upload
+- **🔄 Real-time File Processing**: Process uploaded files immediately for pathway generation
+
+## 🔧 Backend Features
+
+The app includes a FastAPI backend server that provides:
+
+- **Large File Upload**: Handle files up to several GB in size
+- **File Storage**: Secure file storage in `uploaded_files/` directory
+- **File Management**: List, download, and delete uploaded files
+- **CORS Support**: Cross-origin requests for web integration
+- **Automatic Startup**: Backend starts automatically when running the app
+- **Health Checks**: Monitor backend server status
 
 ## 🚀 Quick Start
 
@@ -31,10 +45,28 @@ An AI-powered content generation app that creates comprehensive training materia
    # Edit .env with your API keys
    ```
 
-4. **Run the app**
+4. **Run the app** (Choose one option)
+
+   **Option A: Automatic Backend Startup (Recommended)**
+   ```bash
+   python start_app.py
+   ```
+   This automatically starts the backend server and then launches the Streamlit app.
+
+   **Option B: Manual Backend + Frontend**
+   ```bash
+   # Terminal 1: Start backend server
+   python upload_backend.py
+   
+   # Terminal 2: Start Streamlit app
+   streamlit run app.py
+   ```
+
+   **Option C: App with Auto-Backend Detection**
    ```bash
    streamlit run app.py
    ```
+   The app will automatically detect and start the backend server if needed.
 
 ## 🔧 Configuration
 

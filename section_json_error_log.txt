@@ -1,0 +1,39 @@
+Section JSON Decode Error: Extra data: line 35 column 1 (char 1248)
+Error Position: Line 35, Column 1
+Raw Response:
+[
+  {
+    "title": "Joining a Google Meet Meeting",
+    "description": "This section covers different ways to join a Google Meet meeting.",
+    "modules": [
+      {
+        "title": "Joining with Google Meet Meeting Link",
+        "description": "Learn how to join a meeting using a meeting link.",
+        "content": "Access the meeting link, join using Google Meet."
+      },
+      {
+        "title": "Calling in on the Phone",
+        "description": "Learn how to join a meeting by calling in on your phone.",
+        "content": "Dial in on phone, enter meeting pin."
+      },
+      {
+        "title": "Finding the Meeting Pin",
+        "description": "Learn how to find the meeting pin if you are calling in.",
+        "content": "Ask for the meeting pin, enter the provided pin."
+      }
+    ]
+  },
+  {
+    "title": "Troubleshooting Audio Issues",
+    "description": "This section helps you resolve audio problems during a Google Meet meeting.",
+    "modules": [
+      {
+        "title": "Troubleshooting Audio Issues in Google Meet",
+        "description": "Learn how to troubleshoot common audio problems.",
+        "content": "Trying phone audio, checking sound settings, deleting and reinstalling the Google Meet app."
+      }
+    ]
+  }
+]
+```
+Response Length: 1251

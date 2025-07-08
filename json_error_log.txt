@@ -1,0 +1,1353 @@
+JSON Decode Error: Extra data: line 18 column 1 (char 1418)
+Error Position: Line 18, Column 1
+Raw Response:
+[
+  {
+    "title": "Troubleshooting Google Meet Audio Issues",
+    "description": "This module covers troubleshooting steps for common audio problems in Google Meet, such as inability to hear other participants or being heard by others.",
+    "content": "If experiencing audio issues in Google Meet, try the following:\n- Check your device's sound settings.\n- Try calling in on your phone as an alternative audio source.\n- Ensure your microphone is not muted.\n- If using a computer, try re-installing the Google Meet app.\n- Check the meeting link and pin to ensure you're joining the correct meeting."
+  },
+  {
+    "title": "Joining a Google Meet Meeting",
+    "description": "This module explains how to join a Google Meet meeting using various methods, including via a meeting link or by dialing in with a phone.",
+    "content": "To join a Google Meet meeting:\n- Click the meeting link provided.\n- Alternatively, dial in using the provided phone number and meeting PIN.\n- If dialing in, be aware that video may not be available."
+  },
+  {
+    "title": "Understanding Cobots in Construction",
+    "description": "This module provides a brief introduction to Cobots (collaborative robots) and their applications within the construction industry.",
+    "content": "Cobots are collaborative robots used in various industries, including construction. They represent an area of innovation within the field."
+  }
+]
+```
+Response Length: 1421
+Robust Extraction Error: Expecting ',' delimiter: line 11 column 6 (char 509)
+Raw Response:
+[
+  {
+    "title": "Joining a Google Meet Meeting",
+    "description": "This module covers troubleshooting common issues joining a Google Meet meeting, including audio problems and accessing meeting links.",
+    "content": [
+      "Calling in on phone as an alternative to computer audio",
+      "Using the meeting pin to join",
+      "Joining via a Google Meet meeting link",
+      "Reinstalling the Google Meet app to resolve audio issues",
+      "Troubleshooting inability to hear other participants"
+    ]
+  },
+  {
+    "title": "Using Google Meet on Your Phone",
+    "description": "This module covers using Google Meet on a mobile phone, including joining a meeting and potential limitations.",
+    "content": [
+      "Dialing into the meeting using a phone",
+      "Potential lack of video when joining via phone",
+      "Accessing the meeting link on a phone"
+    ]
+  },
+  {
+    "title": "Troubleshooting Audio Issues in Google Meet",
+    "description": "This module focuses on resolving audio problems encountered during Google Meet meetings.",
+    "content": [
+      "Checking sound settings on the device",
+      "Muting and unmuting to avoid echoes",
+      "Reinstalling the Google Meet application",
+      "Calling in on phone as alternative audio source"
+    ]
+  },
+    {
+        "title": "Understanding Meeting Pins in Google Meet",
+        "description": "This module explains the use and importance of meeting pins for accessing Google Meet meetings.",
+        "content": [
+            "Locating the meeting pin",
+            "Entering the meeting pin to join the meeting"
+        ]
+    }
+
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 8 column 6 (char 296)
+Raw Response:
+[
+  {
+    "title": "Truss Manufacturing Process",
+    "description": "A walkthrough of the truss manufacturing process from start to finish within the factory, focusing on the workflow.",
+    "content": [
+      "Start in the middle of the factory",
+      "One side is the truss making side"
+    ]
+  },
+  {
+    "title": "Reinforcement Manufacturing Process",
+    "description": "A walkthrough of the reinforcement manufacturing process from start to finish within the factory, focusing on the workflow.",
+    "content": [
+      "Start in the middle of the factory",
+      "The other side is the reinforcement making side"
+    ]
+  },
+  {
+    "title": "Factory Layout",
+    "description": "An overview of the factory layout, including material intake and the separation of truss and reinforcement manufacturing.",
+    "content": [
+      "Two sides to the factory",
+      "Material brought in at the same place",
+      "One side does one thing, the other side does the other"
+    ]
+  },
+  {
+    "title": "Bridge Deck and Abutment Construction",
+    "description": "Observation of a constructed bridge deck and abutments.",
+    "content": [
+      "Bridge deck built",
+      "Abutments built"
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 11 column 6 (char 402)
+Raw Response:
+[
+  {
+    "title": "Steel Delivery and Organization",
+    "description": "Process of steel delivery, organization, and sourcing.",
+    "content": [
+      "Steel is delivered to the driveway.",
+      "Steel is organized in piles.",
+      "Steel is ordered from suppliers (channel partners).",
+      "Channel partners fabricate steel to specifications.",
+      "CMC makes their own steel in-house."
+    ]
+  },
+  {
+    "title": "Truss Construction (60-footer)",
+    "description": "Steps involved in constructing a 60-foot (18-meter) truss.",
+    "content": [
+      "Components are assembled using a jig to ensure consistency.",
+      "Welding is used to join the bars of the truss.",
+      "Zigzag components are added to the truss."
+    ]
+  },
+  {
+    "title": "Component Labeling and Identification",
+    "description": "System for labeling and identifying components.",
+    "content": [
+      "Each component has a label indicating its type.",
+      "Labels are used for tracking and assembly."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 10 column 6 (char 570)
+Raw Response:
+[
+  {
+    "title": "Joining Reinforcement Bars",
+    "description": "This module covers the process of joining reinforcement bars, including the tools and techniques used.",
+    "content": [
+      "Threaded ends allow joining two bars together when they are not long enough.",
+      "Couplers with screw threads are used to connect the bars.",
+      "A large wrench with a meter and settings is used to tighten the coupler to the correct torque.",
+      "A special joiner allows adjustment of the bar's end to ensure the leg, designed to grip concrete, lays flat."
+    ]
+  },
+  {
+    "title": "Abutment Component Assembly",
+    "description": "This module details the components of abutments and their assembly.",
+    "content": [
+      "A tray component goes in the middle of the abutment.",
+      "The tray's edges are squashed down during cutting to prevent concrete from falling out."
+    ]
+  },
+  {
+    "title": "A8 60 Footer Bar Joining",
+    "description": "This module describes joining reinforcement bars specifically for the A8 60 footer.",
+    "content": [
+      "Two joiners are required for the A8 60 footer because the bars are not long enough.",
+      "Two types of joiners are used: one is a straight-through joiner and the other is an adjustable joiner."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 8 column 6 (char 382)
+Raw Response:
+[
+  {
+    "title": "Truss Construction: Bottom Cord Assembly",
+    "description": "This module covers the process of assembling the bottom cord of a truss, focusing on the use of a special joiner.",
+    "content": [
+      "The bottom cord of the truss uses a special joiner in the middle.",
+      "The joiner allows the bar to lay flat and be tightened, making it adjustable."
+    ]
+  },
+  {
+    "title": "Welding Techniques for Truss and Beam Construction",
+    "description": "This module explains the welding process used in truss and beam construction, including equipment operation and safety precautions.",
+    "content": [
+      "Welding is done using a welding machine with a carriage, gas bottle (argon gas), and wire feed.",
+      "Argon gas prevents impurities in the air during welding.",
+      "The welding process involves cutting the wire after welding."
+
+    ]
+  },
+  {
+    "title": "Welding Machine Operation and Maintenance",
+    "description": "This module describes the components and operation of the welding machine, including the wire feed system.",
+    "content": [
+      "The welding machine contains a roll of wire that feeds through a cable to the end.",
+      "Pulling the trigger activates the wire feed.",
+      "The machine will stop feeding wire when the roll is empty."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 8 column 6 (char 205)
+Raw Response:
+[
+  {
+    "title": "Truss Construction",
+    "description": "Overview of truss materials and setup.",
+    "content": [
+      "Trusses are set up.",
+      "Materials for truss construction are ready."
+    ]
+  },
+  {
+    "title": "Beam Connections and Ligatures",
+    "description": "Explanation of how beams are connected using ligatures, including different types and adjustments.",
+    "content": [
+      "Beams are connected using ligatures.",
+      "One-piece ligatures slide around the entire beam.",
+      "Adjustable end on one-piece ligatures allows for alignment.",
+      "Two-piece ligatures are used where one-piece ligatures cannot slide past couplers/joiners.",
+      "Two-piece ligatures consist of two separate pieces, one on top and one underneath the beam."
+    ]
+  },
+  {
+    "title": "Couplers/Joiners and Ligature Placement",
+    "description": "Details on the use of couplers/joiners on beams and the impact on ligature placement.",
+    "content": [
+      "Couplers/joiners are present on the large bridge but not the small one.",
+      "Beams are welded together where couplers/joiners are absent.",
+      "Ligatures are normally placed every eight inches.",
+      "Couplers/joiners necessitate using two ligatures instead of one due to their size."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 8 column 6 (char 352)
+Raw Response:
+[
+  {
+    "title": "Truss End Plate Design Change",
+    "description": "Discussion of simplifying the truss end connection by using a flat plate instead of a bent bar.",
+    "content": [
+      "Changing the end connection from a bent bar to a flat plate.",
+      "Simplifies construction and allows for the use of longer, readily available bars."
+    ]
+  },
+  {
+    "title": "Truss Weld Procedures",
+    "description": "Explanation of the welding procedures and requirements for truss construction.",
+    "content": [
+      "Weld length is 10 times the diameter of the steel bar (e.g., 12mm steel requires a 120mm weld).",
+      "Welds join bars together, including a weld joining two bars within the truss.",
+      "Welds around the web of the truss are important structural welds."
+    ]
+  },
+  {
+    "title": "Truss Bar Joining and Length Limitations",
+    "description": "Discussion of the challenges with bar length limitations and the need for joining bars.",
+    "content": [
+      "Bars are currently limited to 15-meter lengths, requiring joining for longer truss spans.",
+      "Joining involves overlapping the bars and welding (described as 'screwing the ends').",
+      "Seeking longer bars (18-20 meters) to avoid joining and save work."
+    ]
+  },
+  {
+    "title": "Truss Jigging and Alignment",
+    "description": "Explanation of the importance of jigging for truss alignment and construction.",
+    "content": [
+      "Jigs ensure proper alignment of truss components.",
+      "Trusses are placed facing each other, with some rotated 180 degrees.",
+      "Jig accuracy is crucial due to the rotation requirement.",
+      "A bar on the side of the jig aids in alignment."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 13 column 6 (char 780)
+Raw Response:
+[
+  {
+    "title": "Truss Construction and Inspection",
+    "description": "Covers the process of constructing trusses, including jig use, coupler placement, and quality control checks.",
+    "content": [
+      "Trusses are made with a jig and checked for symmetry by rotating 180 degrees.",
+      "Locational couplers are used and their placement is staggered to ensure proper concrete flow.",
+      "Packers separate the trusses for correct spacing.",
+      "Couplers are placed at both ends of the trusses and their placement is also staggered.",
+      "Zigzags on the trusses must be precise for cross wire placement.",
+      "Cross wires and hangers are installed through the bottom bars.",
+      "Weld quality is inspected, ensuring they are long and of good quality."
+    ]
+  },
+  {
+    "title": "Beam Assembly from Trusses",
+    "description": "Explains how trusses are combined to create a beam structure.",
+    "content": [
+      "Trusses are combined on a table to form a beam.",
+      "Welding is a critical part of the beam assembly process."
+    ]
+  },
+  {
+    "title": "Beam Component Overview",
+    "description": "Identifies the components of a finished beam, including saddles.",
+    "content": [
+      "A beam includes components like saddles."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 9 column 6 (char 480)
+Raw Response:
+[
+  {
+    "title": "End Foot Construction and Improvements",
+    "description": "Details the construction of the end foot, its importance, and design improvements made for increased strength and reliability.",
+    "content": [
+      "End foot sits on the abutment and holds the weight of the entire bridge.",
+      "Vertical piece added to ensure load goes down, improving weld reliability.",
+      "Concern about weld breaking in locations like India led to design change."
+    ]
+  },
+  {
+    "title": "Cross Tie Installation and Securing",
+    "description": "Explains how the cross ties are positioned and secured within the bridge structure.",
+    "content": [
+      "Cross ties go through and correspond with the saddle.",
+      "A bar is pulled up hard underneath the cross tie when in position and then welded to secure it."
+    ]
+  },
+  {
+    "title": "Deck Mesh Welding and Assembly",
+    "description": "Describes the process of welding the deck mesh and integrating it with other components.",
+    "content": [
+      "Deck mesh is welded together using a welding machine.",
+      "Ligatures are welded to the deck mesh.",
+      "A bar is used to align the mesh during welding."
+    ]
+  },
+  {
+    "title": "Stainless Steel Fasteners and Prevention of Electrical Conductivity/Corrosion",
+    "description": "Explains the use of stainless steel fasteners with fiber washers to prevent electrical conductivity and corrosion.",
+    "content": [
+      "Stainless steel fasteners used with fiber washers.",
+      "Washers prevent electrical conductivity and staining/rust from reaction between stainless steel and magnolias."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 8 column 6 (char 307)
+Raw Response:
+[
+  {
+    "title": "Truss Assembly",
+    "description": "The process of assembling a truss, including its components and the order of assembly.",
+    "content": [
+      "First you have the truss, you put it together with all the different components...",
+      "...then you make the deck out of that."
+    ]
+  },
+  {
+    "title": "Deck Construction",
+    "description": "Constructing the deck, including placing beams, using beam trays, and cladding/seat metal.",
+    "content": [
+      "...two beams...dropped the two beams in...",
+      "...cladding/seat metal...",
+      "...piece...welded together...designed so it holds up the tray and the foot...",
+      "...so that they could get the bolts underneath it..."
+    ]
+  },
+  {
+    "title": "Abutment Construction",
+    "description": "Building the abutment using a jig, ligatures, bars, and painting.",
+    "content": [
+      "Jig...has little slots in it...to put the ligatures...",
+      "Ligatures are all put in the bars all put in...",
+      "They paint this bar pink."
+    ]
+  },
+    {
+        "title": "Welding and Repair",
+        "description": "Welding process and using the plasma cutter for repair.",
+        "content": [
+            "So if I put the machine in the middle, I can weld the whole deck.",
+            "Plasma cutter...cuts...like oxy...cut bits of steel...",
+            "...cut the weld off. It's a repair sort of thing."
+        ]
+    }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 12 column 6 (char 530)
+Raw Response:
+[
+  {
+    "title": "Truss Ligature Welding",
+    "description": "Explains the process of welding ligatures for trusses, contrasting typical tie-wire methods with the welding required for transport stability.",
+    "content": [
+      "Do not weld the pink bar.",
+      "Bottom bars are painted pink to indicate they should be left loose.",
+      "Normally tied with tie wire, but welded here for transport strength.",
+      "Ligatures placed in a jig.",
+      "Top and outside bars positioned.",
+      "Tack welded in place."
+    ]
+  },
+  {
+    "title": "Abutment Cage Assembly",
+    "description": "Describes the components of the abutment cage and the assembly process, including the feet, T-channels, and reinforcing cages.",
+    "content": [
+      "Abutment, rear cage, and wing wall components.",
+      "Reinforcing cages for wing walls.",
+      "Abutment feet bolted to T-channel.",
+      "Steel blocks used to support and level the rear cage during assembly.",
+      "Pink bar alignment with cross ties and bottom bolt."
+    ]
+  },
+  {
+    "title": "Cross-Tie Installation",
+    "description": "Explains the positioning and function of cross-ties within the abutment structure.",
+    "content": [
+      "Cross-ties go through holes in the abutment.",
+      "Cross-ties align with the bottom bolt.",
+      "Silver cross-ties point upwards.",
+      "Abutment foot bolts into the first hole."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 13 column 6 (char 672)
+Raw Response:
+[
+  {
+    "title": "Abutment Assembly",
+    "description": "This module covers the assembly process of abutments, focusing on key components and their connections.",
+    "content": [
+      "Foot of the beam sits on the concrete.",
+      "Holes in the abutment cage align with holes in the beam foot for connection.",
+      "Deck sections (1, 2, 3) are placed, with a flat plate in between for width.",
+      "C-channel, corner covers, and end caps are used.",
+      "Silicone is applied to joints to prevent concrete leakage.",
+      "Wing walls catch dirt backfill.",
+      "Cross ties are welded to the abutment cage, adjusting the pink-marked bars for alignment."
+    ]
+  },
+  {
+    "title": "Beam Placement and Deck Integration",
+    "description": "This module explains how the beams and deck integrate with the abutment.",
+    "content": [
+      "Beam foot sits on concrete, aligning with holes in the abutment cage.",
+      "Bar in the middle of the abutment corresponds to the deck tray location.",
+      "Beams sit in designated holes within the abutment.",
+      "Deck sections are placed between the beams.",
+      "Flat plate goes between deck sections to increase width."
+    ]
+  },
+  {
+    "title": "Wing Wall Construction and Function",
+    "description": "This module details the purpose and installation of wing walls.",
+    "content": [
+      "Wing walls prevent dirt backfill from falling out.",
+      "Wing walls are attached after the main abutment cage assembly.",
+      "They connect to the stepped area of the ground."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 9 column 6 (char 293)
+Raw Response:
+[
+  {
+    "title": "Abutment Construction",
+    "description": "Training on the construction of abutments, focusing on the metal components and their placement.",
+    "content": [
+      "Missing components on abutments",
+      "Metal placement in abutments",
+      "Pockets in abutments"
+    ]
+  },
+  {
+    "title": "Bridge Construction Walkthrough Video",
+    "description": "Creating a training video demonstrating the bridge construction process, guided by a checklist.",
+    "content": [
+      "Video of discussion points",
+      "Checklist of steps",
+      "Walking around and pointing at listed items",
+      "Filming the three bridges in one section"
+    ]
+  },
+  {
+    "title": "Department Workflow and Bridge Movement",
+    "description": "Understanding the workflow of the department and how bridges move through different stages of construction.",
+    "content": [
+      "Department finishing process",
+      "Bridge moving out of jig",
+      "Bridge clapping process",
+      "Three bridges in one section (rare situation)"
+    ]
+  },
+  {
+    "title": "Coil Sheets in Bridge Construction",
+    "description": "Explanation of the use and processing of coil sheets in bridge construction.",
+    "content": [
+      "Sheets coming out of coils"
+    ]
+
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 11 column 6 (char 471)
+Raw Response:
+[
+  {
+    "title": "Truss Component Fabrication",
+    "description": "This module covers the fabrication process of truss components, from raw materials to folded parts, focusing on plasma cutting and folding.",
+    "content": [
+      "Rolls flattened into plates",
+      "Plasma cutting machine cuts holes based on patterns",
+      "Patterns guide folding process",
+      "Notches on patterns indicate folding points",
+      "Folding machine shapes the cut plates"
+    ]
+  },
+  {
+    "title": "Truss Assembly Components",
+    "description": "This module identifies and describes the various components used in truss assembly, including their origin and purpose.",
+    "content": [
+      "Shorter pieces/panels",
+      "Saddle",
+      "Cross ties",
+      "C channels",
+      "Hangings (bottom)",
+      "Feet (truss ends)",
+      "Abutment feet"
+    ]
+  },
+  {
+    "title": "Truss Assembly Overview",
+    "description": "This module provides a general overview of the truss assembly process and mentions the manufacturing location of components.",
+    "content": [
+      "Feet, crossbars, saddles made in Vietnam",
+      "Components assembled [presumably in Australia, given the conversation]"
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 10 column 6 (char 269)
+Raw Response:
+[
+  {
+    "title": "Factory Tour",
+    "description": "A walkthrough of the factory, explaining the different components and processes involved.",
+    "content": [
+      "Plasma cutter",
+      "Safety rail",
+      "Reinforcing steel",
+      "Gate for sheet metal"
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 11 column 6 (char 461)
+Raw Response:
+[
+  {
+    "title": "Installation Guide Overview",
+    "description": "An overview of different bridge types and their components, focusing on installation.",
+    "content": [
+      "Three or four different bridge types",
+      "40-foot and 45-foot bridges with a height of 700mm (~2.5 feet)",
+      "60-foot and 54-foot bridges with a depth of 1 meter",
+      "6-meter bridge with a depth of 400mm",
+      "Components: abutment, wing walls, hanger, bolts"
+    ]
+  },
+  {
+    "title": "Bridge Dimensions and Specifications",
+    "description": "Specific dimensions of different bridge types.",
+    "content": [
+      "40-foot and 45-foot bridges: 700mm beam depth",
+      "60-foot and 54-foot bridges: 1-meter beam depth",
+      "6-meter bridge: 400mm beam depth"
+    ]
+  },
+  {
+    "title": "Installation Documents",
+    "description": "Location of installation guides for different bridge types.",
+    "content": [
+      "Installation guides can be found on SharePoint under Installation Documents"
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 11 column 6 (char 586)
+Raw Response:
+[
+  {
+    "title": "Beam Design Based on Bridge Span",
+    "description": "Explains how the length of a bridge (span) determines the necessary dimensions and cost of the beam.",
+    "content": [
+      "If the bridge is 18 metres long, the height of the beam needs to be one metre.",
+      "If the bridge is 12 metres long, it only needs to be 700 (units not specified).",
+      "If the bridge is 6 meters long, it only needs to be quite small.",
+      "The bigger the span, the deeper the beam.",
+      "The deeper the beam, the more concrete, the more steel, the more expensive."
+    ]
+  },
+  {
+    "title": "Impact of Braking Forces on Bridge Design",
+    "description": "Describes the effect of a truck's braking force on a bridge and how it influences design considerations.",
+    "content": [
+      "The biggest problem for a bridge is when the truck...hits its brakes.",
+      "When a truck hits its brakes, it tries to push the bridge forward.",
+      "If the truck is driving...and he suddenly stops, the whole bridge wants to go (forward)."
+    ]
+  },
+  {
+    "title": "Bridge Cost Optimization Based on Size",
+    "description": "Explains how bridge size affects the cost and how smaller bridges are designed for cost efficiency.",
+    "content": [
+      "We can't make all the bridges the same because they just become too expensive.",
+      "If the span is less, then we make it as cheap as possible for the customer.",
+      "So we make the beam not as deep...So it saves money.",
+      "So if the bridge is smaller, the cost is cheaper."
+    ]
+  },
+{
+    "title": "Abutment Design in Relation to Bridge Deck",
+    "description": "Explains how the abutments are designed in relation to the size of the bridge deck.",
+    "content": [
+        "The abutments are generally the same.",
+        "But the height of the top of the abutment is to suit the deck.",
+        "So if the deck is not very big, the top of the abutment will be smaller."
+    ]
+}
+
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 8 column 6 (char 445)
+Raw Response:
+[
+  {
+    "title": "Truss Support for Concrete Bridges",
+    "description": "Explains the role of trusses in supporting concrete during bridge construction and how they contribute to the final bridge structure.",
+    "content": [
+      "The truss... is what supports the wet concrete.",
+      "When you're driving over the bridge and it goes boom boom, there's 100 times more of those bridges than... the ones that go over the top of you."
+    ]
+  },
+  {
+    "title": "Types of Bridges",
+    "description": "Differentiates between overpasses and the type of concrete bridges discussed, focusing on size, construction methods, and prevalence.",
+    "content": [
+      "There's two types of bridges... overpasses... and then there's the bridges that you drive over.",
+      "The big ones that go over the top of you are too big... too much steel, too much support.",
+      "There's 100 times more of [the bridges we build] than what there are the ones that go over the top of you."
+
+    ]
+  },
+  {
+    "title": "Cast on Site Concrete Bridge Construction",
+    "description": "Describes the process of casting concrete bridges on site, highlighting the advantages of this method compared to precast construction.",
+    "content": [
+      "It's not precast... it's called cast on site... when it's installed, then you put the concrete in.",
+      "It's lighter, it's easier to transport, and the metal on the outside protects the concrete and stops the concrete from corroding or wearing out."
+    ]
+  },
+    {
+        "title": "Benefits of Steel in Concrete Bridge Construction",
+        "description": "Explains how the steel used in the bridge construction protects the concrete and contributes to the longevity of the bridge.",
+        "content": [
+            "The metal on the outside protects the concrete and stops the concrete from corroding or wearing out.",
+            "All the steel on the underside of the bridge protects the concrete because it stops corrosion, it stops everything."
+        ]
+    }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 9 column 6 (char 245)
+Raw Response:
+[
+  {
+    "title": "Inquik Bridge Assembly",
+    "description": "Training on assembling the components of the Inquik bridge system.",
+    "content": [
+      "Components video demonstration",
+      "Abutment assembly",
+      "Cage assembly"
+    ]
+  },
+  {
+    "title": "Inquik Bridge Components",
+    "description": "Overview of the various components used in the Inquik bridge system.",
+    "content": [
+      "Visual presentation of components",
+      "Explanation of each component's function"
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 9 column 6 (char 357)
+Raw Response:
+[
+  {
+    "title": "Truss Manufacturing Process",
+    "description": "A walkthrough of the truss manufacturing process from start to finish within the factory, including the workflow and factory layout.",
+    "content": [
+      "Start in the middle of the factory",
+      "One side is the truss making side",
+      "Walk through the workflow visually"
+    ]
+  },
+  {
+    "title": "Reinforcement Manufacturing Process",
+    "description": "A walkthrough of the reinforcement manufacturing process within the factory, including the workflow and factory layout.",
+    "content": [
+      "Start in the middle of the factory",
+      "The other side is the reinforcement making side",
+      "Walk through the workflow visually"
+    ]
+  },
+  {
+    "title": "Bridge Deck and Abutment Construction",
+    "description": "Observation and analysis of a completed bridge deck and abutments.",
+    "content": [
+      "Eyeball the bridge deck and abutments",
+      "Consider using existing training videos made by CMC"
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 9 column 6 (char 351)
+Raw Response:
+[
+  {
+    "title": "Steel Delivery and Organization",
+    "description": "Process of steel delivery, organization, and initial placement on the construction site.",
+    "content": [
+      "Steel is delivered to the main driveway.",
+      "Steel is organized into piles on-site by John.",
+      "Steel is ordered from a supplier/channel partner."
+    ]
+  },
+  {
+    "title": "Truss Construction (Welding and Jigging)",
+    "description": "The process of constructing trusses, including welding components together and the use of jigs.",
+    "content": [
+      "Trusses are welded together from bars.",
+      "A jig is used to ensure consistent truss dimensions.",
+      "Zigzag components are added to the trusses after the main bars are welded."
+    ]
+  },
+  {
+    "title": "Component Labeling and Identification",
+    "description": "How components are labeled and identified for assembly.",
+    "content": [
+      "Each component has a label identifying its type.",
+      "Labels can be located on different parts of the component."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 11 column 6 (char 731)
+Raw Response:
+[
+  {
+    "title": "Joining Reinforcement Bars",
+    "description": "This module covers the process of joining reinforcement bars, including the reasons for joining, the types of joiners, and the tools used.",
+    "content": [
+      "Reinforcement bars (rebar) are joined when they are not long enough for a given application.",
+      "Threaded ends and couplers are used to join two bars together.",
+      "Two types of couplers are described: a straight-through joiner and an adjustable joiner.",
+      "The adjustable joiner allows for the orientation of the rebar's leg to be adjusted for proper concrete grip.",
+      "A wrench with a meter and adjustable settings is used to tighten the couplers to the correct torque."
+    ]
+  },
+  {
+    "title": "Abutment Tray Construction",
+    "description": "This module explains the design and purpose of the abutment tray, focusing on a feature that prevents concrete leakage.",
+    "content": [
+      "An abutment tray is used in the construction process.",
+      "The tray's edges are squashed down during cutting to prevent concrete from leaking out.",
+      "Traditional cutting methods leave open ends, allowing concrete to escape."
+    ]
+  },
+  {
+    "title": "A8 60 Footer Construction",
+    "description": "This module briefly mentions the A8 60 footer and the need for joining rebar due to length limitations.",
+    "content": [
+      "The A8 60 footer requires joining of rebar because the required length exceeds the available bar length."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 9 column 6 (char 450)
+Raw Response:
+[
+  {
+    "title": "Truss Construction: Bottom Cord Assembly",
+    "description": "This module covers the assembly and joining of the bottom cord of a truss, focusing on a specific joining mechanism.",
+    "content": [
+      "The bottom cord of the truss is assembled using a special joiner.",
+      "The joiner allows the bar to lay flat and be tightened for adjustability.",
+      "Without the joiner, the bar might sit up like on an anchor."
+    ]
+  },
+  {
+    "title": "Welding Techniques for Truss Construction",
+    "description": "This module demonstrates the welding process used in truss construction, including equipment operation and safety precautions.",
+    "content": [
+      "Welding is performed using a welding machine with a carriage, gas bottle (argon gas), and wire feed.",
+      "The argon gas prevents impurities in the air during welding.",
+      "The wire is fed through the welding machine and melts to join the truss components.",
+      "Protective glasses are required for watching the welding process."
+
+    ]
+  },
+  {
+    "title": "Welding Machine Operation and Maintenance",
+    "description": "This module explains the function and operation of the welding machine, including wire feed and potential issues.",
+    "content": [
+      "The welding machine contains a roll of wire that feeds through the cable and out the end.",
+      "Pulling the trigger activates the wire feed mechanism.",
+      "If the wire runs out, it will stop coming out of the machine."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 9 column 6 (char 280)
+Raw Response:
+[
+  {
+    "title": "Truss Construction",
+    "description": "Overview of truss materials and setup.",
+    "content": [
+      "Trusses located in the storeroom.",
+      "Materials for truss construction are prepared.",
+      "Welding machine access holes present on trusses."
+    ]
+  },
+  {
+    "title": "Beam Ligature Installation",
+    "description": "Procedure for installing ligatures on beams, including variations for different beam types.",
+    "content": [
+      "One-piece ligatures slide around entire beam.",
+      "Adjustable end on one-piece ligatures allows for alignment.",
+      "Two-piece ligatures used when one-piece ligatures cannot slide past couplers/joiners.",
+      "Two-piece ligatures used on the large bridge, not the small one."
+    ]
+  },
+  {
+    "title": "Coupler/Joiner Impact on Ligature Placement",
+    "description": "Explanation of how couplers affect ligature placement and the solution employed.",
+    "content": [
+      "Couplers/joiners prevent the use of one-piece ligatures.",
+      "Two-piece ligatures used on beams with couplers/joiners.",
+      "Two ligatures used per section instead of one due to large couplers.",
+      "Ligatures normally placed every eight inches."
+    ]
+  },
+    {
+        "title": "Two-Piece Ligature Assembly",
+        "description": "How two-piece ligatures are manufactured and installed.",
+        "content": [
+            "Two-piece ligatures are manufactured as two separate pieces.",
+            "One piece is slipped on top of the beam, and the other underneath."
+        ]
+    }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 9 column 6 (char 428)
+Raw Response:
+[
+  {
+    "title": "Truss Construction: End Plate Design Change",
+    "description": "Discussion of simplifying the truss end connection by using a flat plate instead of a bent bar.",
+    "content": [
+      "Changing the end connection from a bent bar to a flat plate.",
+      "Simplifies construction by eliminating the need for bending the bar.",
+      "Allows the use of longer, readily available bar stock in America."
+    ]
+  },
+  {
+    "title": "Truss Welding Procedures",
+    "description": "Explanation of welding procedures for truss assembly, including weld length calculations and joining shorter bars.",
+    "content": [
+      "Weld length is 10 times the diameter of the steel (e.g., 12mm steel requires 120mm weld).",
+      "Shorter bars are joined with overlapping welds because longer bars are not readily available.",
+      "Efforts are being made to source longer bars to eliminate the need for joining."
+    ]
+  },
+  {
+    "title": "Truss Assembly and Jigging",
+    "description": "Description of the truss assembly process, including jigging requirements and alignment procedures.",
+    "content": [
+      "Trusses are assembled in a jig to ensure proper alignment.",
+      "Some trusses need to be rotated 180 degrees for proper placement.",
+      "Jigs need to be precise in both directions to accommodate rotation.",
+      "Aligning bars are used to position the trusses within the jig."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 14 column 6 (char 774)
+Raw Response:
+[
+  {
+    "title": "Truss Assembly and Inspection",
+    "description": "Covers the process of assembling trusses, quality checks performed during assembly, and the importance of proper truss construction.",
+    "content": [
+      "Trusses are made with a jig to ensure consistent size.",
+      "Jig is checked by rotating the truss 180 degrees.",
+      "Locational couplers are used and their placement is staggered to maintain spacing for concrete.",
+      "Packers separate trusses for correct spacing.",
+      "Couplers are placed at opposite ends of rotated trusses.",
+      "Zigzags are positioned to avoid interference with cross wires.",
+      "Cross wires and hangers are installed through the bottom bars.",
+      "Welds are inspected for quality and length."
+    ]
+  },
+  {
+    "title": "Truss to Beam Combination",
+    "description": "Explains how trusses are combined to create a beam structure.",
+    "content": [
+      "Trusses are combined on a table to form a beam.",
+      "Welding is crucial for joining the trusses."
+    ]
+  },
+  {
+    "title": "Beam, Saddle, and Cap Head Screws Overview",
+    "description": "Brief overview of the beam, saddle, and cap head screws.",
+    "content": [
+      "Visual inspection of the beam and saddle.",
+      "Mention of cap head screws."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 9 column 6 (char 560)
+Raw Response:
+[
+  {
+    "title": "End Foot Construction and Improvements",
+    "description": "This module covers the construction of the end foot, a critical component supporting the bridge's weight, and recent design improvements to enhance its strength and reliability.",
+    "content": [
+      "The end foot sits on the abutment and holds the entire bridge's weight.",
+      "A vertical piece was added to ensure the load always goes down, improving weld safety.",
+      "Concerns about weld quality, especially in locations like India, led to this design change."
+    ]
+  },
+  {
+    "title": "Cross Tie Installation and Securing",
+    "description": "This module describes how cross ties are installed and secured within the bridge structure, using a specific bar and welding process.",
+    "content": [
+      "Cross ties go through corresponding saddles.",
+      "A bar is pulled up hard underneath the cross tie when in position.",
+      "The bar is then welded to secure the cross tie."
+    ]
+  },
+  {
+    "title": "Deck Mesh Welding and Assembly",
+    "description": "This module explains the process of welding the deck mesh together, including the tools and techniques used.",
+    "content": [
+      "Deck mesh is welded together using a welding machine.",
+      "A bar is used to align the mesh during welding.",
+      "Ligatures are welded to the deck mesh.",
+      "A 'caddy' system improves welding efficiency compared to previous methods."
+    ]
+  },
+  {
+    "title": "Stainless Steel Fasteners and Prevention of Electrical Conductivity",
+    "description": "This module describes the use of stainless steel fasteners with fiber washers to prevent electrical conductivity and staining.",
+    "content": [
+      "Stainless steel fasteners are used.",
+      "Fiber washers are placed underneath to prevent electrical conductivity and staining from potential reactions between the stainless steel and the magnolia wood."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 8 column 6 (char 307)
+Raw Response:
+[
+  {
+    "title": "Truss Construction",
+    "description": "The process of assembling a truss, including its components and the sequence of assembly.",
+    "content": [
+      "First you have the truss, you put it together with all the different components",
+      "then you make the deck out of that"
+    ]
+  },
+  {
+    "title": "Deck Construction",
+    "description": "How the deck is constructed using beams and other components, including storage and loading procedures.",
+    "content": [
+      "Two decks...are storage",
+      "truck will come into this gate and we'll load the truck",
+      "they would have got two beams and they would have dropped the two beams in",
+      "piece here at the end that's welded together that's designed so it holds up the tray and the foot"
+    ]
+  },
+  {
+    "title": "Abutment Construction",
+    "description": "The different stages of abutment construction, including the use of a jig, ligatures, and bars.",
+    "content": [
+      "every stage of the abutment here",
+      "jig here has little slots in it and the slots are designed to be able to put the figures in",
+      "cut out...so they can space the ligatures",
+      "ligatures are all put in the bars all put in and they paint this bar pink"
+    ]
+  },
+  {
+    "title": "Plasma Cutting for Repair",
+    "description": "Using a plasma cutter to repair welding mistakes.",
+    "content": [
+      "plasma cutter...it just cuts it's like oxy you can just cut bits of steel",
+      "if somebody makes a mistake with their welding, we can use this machine and just cut the weld off"
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 11 column 6 (char 504)
+Raw Response:
+[
+  {
+    "title": "Truss Construction: Jig Assembly and Welding",
+    "description": "This module covers the process of assembling truss components within a jig and the welding techniques employed.",
+    "content": [
+      "Ligatures placed in jig",
+      "Top and outside bars positioned",
+      "Tack welding used to hold bars in place",
+      "Remaining bars added one by one",
+      "Welding everything due to transportation needs and strength requirements (contrast with tying with tie wire)"
+    ]
+  },
+  {
+    "title": "Beam Construction: Abutment and Wing Wall Assembly",
+    "description": "This module focuses on assembling the abutment, feet, and wing wall components of a beam.",
+    "content": [
+      "Abutment feet bolted to T-channel",
+      "Steel block used to prevent sagging during construction",
+      "Rear cage sits on steel block",
+      "Pink bar aligns with cross ties and bottom bolt",
+      "Cross ties go through holes",
+      "Welding the bar to the foot"
+    ]
+  },
+  {
+    "title": "Cross-Tie Integration",
+    "description": "This module details the integration of cross ties within the beam structure.",
+    "content": [
+      "Cross ties go through holes in the structure",
+      "Cross ties line up with the bottom bolt",
+      "Pink bar aligns with the cross ties"
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 12 column 6 (char 596)
+Raw Response:
+[
+  {
+    "title": "Abutment Assembly",
+    "description": "This module covers the assembly process of an abutment, including the placement of key components like cross ties, wing walls, and the main cage.",
+    "content": [
+      "Main cage with bars every 800mm left unwelded (marked pink)",
+      "Cross ties inserted through holes in the main cage",
+      "Cross ties welded to the main cage and channels",
+      "Wing walls attached to abutment after main cage assembly",
+      "Wing walls extend outwards from a step in the ground",
+      "Wing walls designed to retain dirt backfill"
+    ]
+  },
+  {
+    "title": "Truss and Beam Placement on Abutment",
+    "description": "This module explains how the truss, beams, and deck are positioned and secured onto the abutment.",
+    "content": [
+      "Concrete poured up to a specific level on the abutment",
+      "Foot of the beam sits on the concrete",
+      "Holes in the abutment cage align with holes in the beam foot",
+      "Deck sections (1, 2, 3) placed between beams",
+      "Flat plate inserted between deck sections for added width"
+    ]
+  },
+  {
+    "title": "C-Channel and Corner Cover Assembly",
+    "description": "This module details the assembly and sealing of the C-channel, corner covers, and end caps.",
+    "content": [
+      "C-channel forms the main structure",
+      "Corner covers placed over the corners of the C-channel",
+      "End caps cover the ends of the C-channel and screw into it",
+      "Silicone applied to joints to prevent concrete leakage"
+
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 10 column 6 (char 385)
+Raw Response:
+[
+  {
+    "title": "Abutment Construction Process",
+    "description": "Training module focusing on the construction and assembly of bridge abutments, including the metal components and their placement.",
+    "content": [
+      "Missing on the abutments because it's not finished yet",
+      "all the metal was in the above",
+      "the other pockets in it",
+      "the abutment"
+    ]
+  },
+  {
+    "title": "Department Workflow and Bridge Assembly",
+    "description": "This module covers the workflow within the department, the stages of bridge assembly, and the movement of bridge components through different stages (jig, clamping, etc.).",
+    "content": [
+      "tomorrow or Monday, when we come back here, this department will be finished",
+      "The one behind it will be out of the jig",
+      "This one will be clapped",
+      "It moves pretty fast",
+      "three of them in one section"
+    ]
+  },
+  {
+    "title": "Video Walkthrough and Documentation of Bridge Construction",
+    "description": "This module describes the creation of a video walkthrough documenting the bridge construction process, including the creation of a list of key points for the video.",
+    "content": [
+      "do a video of what we discussed today",
+      "write out a list, give it to me",
+      "someone walking around with me, pointing at the list, saying this is next",
+      "film it for you"
+
+    ]
+  },
+    {
+        "title": "Incoming Bridge Projects and Training Opportunities",
+        "description": "This module discusses upcoming bridge projects and how they will provide opportunities for repeated training and documentation.",
+        "content": [
+            "we're going to keep getting other bridges in",
+            "we've got three of these bridges coming through all at once",
+            "some coming soon in the next like few couple of weeks",
+            "place everything together, come up with the workflow of how you can film everything"
+        ]
+    }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 10 column 6 (char 494)
+Raw Response:
+[
+  {
+    "title": "Plasma Cutting and Folding",
+    "description": "This module covers the process of creating tray components from flat plates using plasma cutting and a folding machine.",
+    "content": [
+      "Flat plates are processed by a plasma cutting machine.",
+      "The machine cuts holes based on a pattern.",
+      "The resulting shape is then folded using a folding machine.",
+      "Notches on the pattern guide the folding process, eliminating the need for measurement."
+    ]
+  },
+  {
+    "title": "Truss and Beam Component Overview",
+    "description": "This module identifies and describes the various components used in truss and beam construction.",
+    "content": [
+      "Shorter pieces/panels",
+      "Saddles",
+      "Cross ties",
+      "C channels",
+      "Hangings (bottom)",
+      "Feet (truss ends)",
+      "Abutment feet"
+    ]
+  },
+  {
+    "title": "Component Sourcing and Assembly",
+    "description": "This module explains where the components are manufactured and how they are assembled.",
+    "content": [
+      "Feet, crossbars, and saddles are made in Vietnam.",
+      "Components are assembled on-site.",
+      "Cross ties are sourced from Vietnam."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 10 column 6 (char 300)
+Raw Response:
+[
+  {
+    "title": "Factory Tour",
+    "description": "A walkthrough of the factory, explaining the different components and processes involved in truss and beam construction.",
+    "content": [
+      "Plasma cutter",
+      "Safety rail",
+      "Reinforcing steel",
+      "Gate for sheet metal"
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 12 column 6 (char 517)
+Raw Response:
+[
+  {
+    "title": "Installation Guide Overview",
+    "description": "An overview of different bridge types and their components, focusing on installation.",
+    "content": [
+      "Three or four different bridge types",
+      "40-foot and 45-foot bridge with a height of 700mm (~2.5 feet)",
+      "Components: abutment, wing walls, hanger, bolts",
+      "60-foot and 54-foot bridge with a depth of 1 meter",
+      "40-foot and 45-foot bridge with a depth of 700mm",
+      "6-meter bridge with a depth of 400mm"
+    ]
+  },
+  {
+    "title": "Bridge Components",
+    "description": "Specific components of different bridge types.",
+    "content": [
+      "Abutment",
+      "Wing walls",
+      "Hanger",
+      "Bolts"
+    ]
+  },
+{
+    "title": "Bridge Dimensions based on Length",
+    "description": "Depth variations of bridges based on their length.",
+    "content": [
+      "60-foot and 54-foot bridge: 1 meter deep",
+      "40-foot and 45-foot bridge: 700mm deep",
+      "6-meter bridge: 400mm deep"
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 11 column 6 (char 575)
+Raw Response:
+[
+  {
+    "title": "Bridge Beam Design Based on Span",
+    "description": "Explains how bridge beam depth and material requirements change with bridge length to manage cost and strength.",
+    "content": [
+      "If the bridge is 18 metres long, the height of the beam needs to be one metre.",
+      "If the bridge is 12 metres long, it only needs to be 700.",
+      "If the bridge is 6 meters long, it only needs to be quite small.",
+      "The bigger the span, the deeper the beam.",
+      "The deeper the beam, the more concrete, the more steel, the more expensive."
+    ]
+  },
+  {
+    "title": "Bridge Response to Truck Braking",
+    "description": "Describes the forces exerted on a bridge when a truck brakes and how this impacts bridge design.",
+    "content": [
+      "The biggest problem for a bridge is when the truck... hits its brakes.",
+      "When a truck hits its brakes, it tries to push the bridge forward.",
+      "If the truck is driving... and he suddenly stops, the whole bridge wants to go this way."
+    ]
+  },
+  {
+    "title": "Bridge Cost Optimization",
+    "description": "Explains how bridge design is adjusted to minimize costs while meeting strength requirements.",
+    "content": [
+      "We can't make all the bridges the same because they just become too expensive.",
+      "So if the span is less, then we make it as cheap as possible for the customer.",
+      "So we make the beam not as deep. So it saves money.",
+      "So if the bridge is smaller, the cost is cheaper."
+    ]
+  },
+    {
+        "title": "Abutment Design in Relation to Bridge Deck",
+        "description": "Explains how abutment height is adjusted to match the bridge deck size.",
+        "content": [
+            "The abutments are generally the same.",
+            "But the height of the top of the abutment is to suit the deck.",
+            "So if the deck is not very big, the top of the abutment will be smaller."
+        ]
+    }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 8 column 6 (char 481)
+Raw Response:
+[
+  {
+    "title": "Truss Support for Concrete Bridges",
+    "description": "Explains the role of trusses in supporting concrete during bridge construction and how they contribute to the final bridge structure.",
+    "content": [
+      "The truss that we've been looking at is what supports the wet concrete.",
+      "When you're driving over the bridge and it goes boom boom, there's 100 times more of those bridges than what there are the ones that go over the top of you."
+    ]
+  },
+  {
+    "title": "Types of Bridges",
+    "description": "Differentiates between overpass bridges and the concrete bridges discussed, focusing on size, construction, and prevalence.",
+    "content": [
+      "There's two types of bridges.",
+      "There's the bridges that you see above you that go from one side of the highway to the other... they call them overpasses.",
+      "And then there's the bridges that you drive over. We build the bridges that you drive over.",
+      "The big ones that go over the top of you are too big... there's too much steel, too much support."
+    ]
+  },
+  {
+    "title": "Concrete Bridge Construction (Cast on Site)",
+    "description": "Details the process of constructing concrete bridges on-site, highlighting the advantages of this method and the role of the metal structure.",
+    "content": [
+      "We fill up the beams with concrete and they become a concrete bridge.",
+      "It's not precast where it's made before it's delivered. It's called cast on site.",
+      "So when it's installed, then you put the concrete in.",
+      "It's lighter, it's easier to transport, and the metal on the outside protects the concrete and stops the concrete from corroding or wearing out.",
+      "All the steel on the underside of the bridge protects the concrete because it stops corrosion, it stops everything."
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 9 column 6 (char 241)
+Raw Response:
+[
+  {
+    "title": "Inquik Bridge Assembly",
+    "description": "Training on assembling components of the Inquik bridge system.",
+    "content": [
+      "Components video demonstration",
+      "Abutment assembly",
+      "Cage assembly"
+    ]
+  },
+  {
+    "title": "Inquik Bridge Components",
+    "description": "Overview of the various components used in Inquik bridge construction.",
+    "content": [
+      "Visual presentation of components",
+      "Explanation of component placement and function"
+    ]
+  }
+]
+```
+Robust Extraction Error: Expecting ',' delimiter: line 7 column 21 (char 1091)
+Raw Response:
+[
+  {
+    "title": "cross tie",
+    "description": "How cross ties are secured within the bridge structure.",
+    "content": "So there's those and then underneath we've got bolts that go up in saddle into the hanger so if we look here you'll see the cross tie going through you'll see the other cross tie at the top and they're corresponding with the saddle here yep this bar here do you remember the bar I said that we leave loose yeah We pull we pull that bar up hard up underneath the cross tie When when it's in position, then we weld it in and that way The cross type sits on it.",
+    "source_excerpt": "So there's those and then underneath we've got bolts that go up in saddle into the hanger so if we look here you'll see the cross tie going through you'll see the other cross tie at the top and they're corresponding with the saddle here yep this bar here do you remember the bar I said that we leave loose yeah We pull we pull that bar up hard up underneath the cross tie When when it's in position, then we weld it in and that way The cross type sits on it.",
+    "line_number": 6-12
+  },
+  {
+    "title": "End foot",
+    "description": "Design and function of the end foot, including a recent improvement for weld strength.",
+    "content": "This is the end foot That sits on the abutment That's what holds the weight of the entire bridge There it is there So that's a pretty important thing. I changed the design on that recently and Because I wasn't happy with some of the welding Not here, but I thought that in places like India the welding might not be very good So I put a vertical piece here So that the load was always going down Because before I only had this weld and I was afraid that if that weld broke Then it would drop so I put this plate on",
+    "source_excerpt": "This is the end foot That sits on the abutment That's what holds the weight of the entire bridge There it is there So that's a pretty important thing. I changed the design on that recently and Because I wasn't happy with some of the welding Not here, but I thought that in places like India the welding might not be very good So I put a vertical piece here So that the load was always going down Because before I only had this weld and I was afraid that if that weld broke Then it would drop so I put this plate on",
+    "line_number": 13-22
+  },
+  {
+    "title": "deck mesh",
+    "description": "Construction of the bridge deck, including welding the mesh and ligatures.",
+    "content": "These this is the deck and we're looking You can see looking looking down Into the deck. You can see the crossfire and these are barrier bolts Which change all the time? It would get too excited about them. This component here on the side. We call that a side form and it it stops the concrete from spilling out it's like the formwork yeah it is formwork which is why we call it side form and then this man over here is welding the deck mesh oh very exciting I don't know who it is we've got a couple of you guys here so he's got a bar that he's using to all the mesh up with and he's welding everything so all of these all of these all of this mesh is all welded together yeah oh wow and it all gets put together in components we weld the ligatures to the deck mesh and that's what he's doing now he's welding the other side",
+    "source_excerpt": "These this is the deck and we're looking You can see looking looking down Into the deck. You can see the crossfire and these are barrier bolts Which change all the time? It would get too excited about them. This component here on the side. We call that a side form and it it stops the concrete from spilling out it's like the formwork yeah it is formwork which is why we call it side form and then this man over here is welding the deck mesh oh very exciting I don't know who it is we've got a couple of you guys here so he's got a bar that he's using to all the mesh up with and he's welding everything so all of these all of these all of this mesh is all welded together yeah oh wow and it all gets put together in components we weld the ligatures to the deck mesh and that's what he's doing now he's welding the other side",
+    "line_number": 28-38
+  }
+]
+```

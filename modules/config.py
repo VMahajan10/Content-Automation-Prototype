@@ -6,20 +6,19 @@ Handles all environment variables and API configurations
 import os
 from dotenv import load_dotenv
 import google.generativeai as genai
-import streamlit as st
 
 # Load environment variables
 load_dotenv()
 
 # Configure Google Gemini API
 api_key = os.getenv('GEMINI_API_KEY')
-if not api_key or api_key == "your_gemini_api_key_here":
-    st.error("⚠️ Please set your Gemini API key in the .env file")
-    st.stop()
 
-# Configure Gemini
-genai.configure(api_key=api_key)
-model = genai.GenerativeModel('gemini-1.5-pro')
+# Configure Gemini if API key is available
+if api_key and api_key != "your_gemini_api_key_here":
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-2.5-pro')
+else:
+    model = None
 
 # Vadoo AI Configuration
 VADOO_API_KEY = os.getenv('VADOO_API_KEY')

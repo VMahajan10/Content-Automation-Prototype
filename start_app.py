@@ -12,9 +12,40 @@ import os
 import signal
 import psutil
 import atexit
+import socket
 
 # Global variable to track backend process
 backend_process = None
+
+def is_port_in_use(port):
+    """Check if a port is already in use"""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(1)
+            result = s.connect_ex(('localhost', port))
+            return result == 0
+    except:
+        return False
+
+def kill_process_on_port(port):
+    """Kill any process using the specified port"""
+    try:
+        for proc in psutil.process_iter(['pid', 'name', 'connections']):
+            try:
+                connections = proc.info['connections']
+                if connections:
+                    for conn in connections:
+                        if conn.laddr.port == port:
+                            print(f"🔄 Killing process using port {port} (PID: {proc.info['pid']})")
+                            proc.terminate()
+                            proc.wait(timeout=5)
+                            return True
+            except (psutil.NoSuchProcess, psutil.TimeoutExpired, psutil.AccessDenied):
+                pass
+        return False
+    except Exception as e:
+        print(f"⚠️ Warning: Could not check processes on port {port}: {e}")
+        return False
 
 def kill_existing_backend():
     """Kill any existing backend processes"""
@@ -28,14 +59,24 @@ def kill_existing_backend():
                     proc.wait(timeout=5)
             except (psutil.NoSuchProcess, psutil.TimeoutExpired):
                 pass
+        
+        # Also kill any process using port 8000
+        if is_port_in_use(8000):
+            print("🔄 Port 8000 is in use, attempting to free it...")
+            kill_process_on_port(8000)
+            time.sleep(2)  # Wait for port to be freed
+            
     except Exception as e:
         print(f"⚠️ Warning: Could not kill existing processes: {e}")
 
 def check_backend():
-    """Check if backend server is running"""
+    """Check if backend server is running and responding"""
     try:
-        response = requests.get("http://localhost:8000/", timeout=3)
-        return response.status_code == 200
+        response = requests.get("http://localhost:8000/health", timeout=3)
+        if response.status_code == 200:
+            data = response.json()
+            return data.get('status') == 'healthy'
+        return False
     except:
         return False
 
@@ -45,8 +86,16 @@ def start_backend():
     
     print("🚀 Starting backend server...")
     
-    # First, kill any existing backend processes
+    # First, kill any existing backend processes and free port 8000
     kill_existing_backend()
+    
+    # Wait a moment for processes to fully terminate
+    time.sleep(2)
+    
+    # Check if port is now free
+    if is_port_in_use(8000):
+        print("❌ Port 8000 is still in use after cleanup attempts")
+        return None
     
     try:
         # Start backend in background with better error handling
@@ -61,17 +110,17 @@ def start_backend():
         
         # Wait for backend to start with better timeout handling
         print("⏳ Waiting for backend server to start...")
-        for i in range(15):  # Increased timeout to 15 seconds
+        for i in range(20):  # Increased timeout to 20 seconds
             time.sleep(1)
             if check_backend():
                 print("✅ Backend server started successfully")
                 return backend_process
             if i < 5:
-                print(f"⏳ Waiting for backend... ({i+1}/15)")
+                print(f"⏳ Waiting for backend... ({i+1}/20)")
             elif i == 5:
                 print("⏳ Backend is taking longer than expected...")
             elif i % 3 == 0:
-                print(f"⏳ Still waiting... ({i+1}/15)")
+                print(f"⏳ Still waiting... ({i+1}/20)")
         
         # If we get here, backend didn't start
         print("❌ Backend server failed to start within timeout")
@@ -115,7 +164,7 @@ def main():
     
     # Check if backend is already running
     if check_backend():
-        print("✅ Backend server is already running")
+        print("✅ Backend server is already running and healthy")
     else:
         # Start backend with retry logic
         max_retries = 3
@@ -132,7 +181,7 @@ def main():
         
         if not backend_process:
             print("❌ Failed to start backend server after all attempts")
-            print("💡 You can still run the app, but some features may not work")
+            print("💡 You can still run the app, but file upload features may not work")
             print("💡 To start backend manually: python upload_backend.py")
             print("💡 Check if port 8000 is available: lsof -i :8000")
     

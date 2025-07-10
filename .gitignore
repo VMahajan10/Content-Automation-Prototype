@@ -43,3 +43,46 @@ Thumbs.db
 
 # Ignore Streamlit secrets
 .streamlit/secrets.toml .env.backup
+
+# User uploaded files - NEVER track these in git
+uploaded_files/
+uploads/
+*.mp4
+*.avi
+*.mov
+*.wmv
+*.flv
+*.mkv
+*.webm
+*.m4v
+*.3gp
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.wma
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+*.txt
+*.rtf
+*.odt
+*.ods
+*.odp
+
+# Error logs and temporary files
+*_error_log.txt
+*_log.txt
+*.log
+temp/
+tmp/
+cache/
+
+# Temporary test files (keep important test files)
+test_file.txt
+test_video_content.txt

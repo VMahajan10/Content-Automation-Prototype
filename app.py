@@ -19,6 +19,7 @@ import google.generativeai as genai
 import subprocess
 import threading
 import atexit
+import io
 try:
     import ffmpeg
 except ImportError:
@@ -26,8 +27,55 @@ except ImportError:
 
 # Import from our modules
 from modules.config import *
-from modules.utils import extract_key_topics_from_content, calculate_text_dimensions, gemini_generate_module_description, gemini_group_modules_into_sections
+from modules.utils import create_quick_pathway
 from markmap_component import markmap
+
+# BackendFile class for handling file-like objects
+class BackendFile:
+    def __init__(self, name, content, size):
+        self.name = name
+        self.content = content
+        self.size = size
+        self._position = 0
+        # Determine file type from extension
+        ext = os.path.splitext(name)[1].lower()
+        if ext in ['.mp4', '.mov', '.avi', '.mkv']:
+            self.type = 'video/mp4'
+        elif ext in ['.mp3', '.wav', '.aac', '.ogg', '.flac']:
+            self.type = 'audio/mp3'
+        elif ext == '.pdf':
+            self.type = 'application/pdf'
+        elif ext == '.docx':
+            self.type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        elif ext == '.txt':
+            self.type = 'text/plain'
+        else:
+            self.type = 'application/octet-stream'
+    
+    def getvalue(self):
+        return self.content
+    
+    def seek(self, offset, whence=0):
+        """Proper seek method for file-like objects"""
+        if whence == 0:
+            self._position = offset
+        elif whence == 1:
+            self._position += offset
+        elif whence == 2:
+            self._position = len(self.content) + offset
+        return self._position
+    
+    def read(self, size=-1):
+        """Read method for file-like objects"""
+        if size == -1:
+            size = len(self.content) - self._position
+        data = self.content[self._position:self._position + size]
+        self._position += len(data)
+        return data
+    
+    def tell(self):
+        """Tell method for file-like objects"""
+        return self._position
 
 # Global variable to track backend process
 backend_process = None
@@ -471,30 +519,7 @@ def show_training_discovery_page():
                                                 # Download file from backend
                                                 download_response = requests.get(f"http://localhost:8000/files/{file_info['filename']}/download")
                                                 if download_response.status_code == 200:
-                                                    # Create a file-like object
-                                                    class BackendFile:
-                                                        def __init__(self, name, content, size):
-                                                            self.name = name
-                                                            self.content = content
-                                                            self.size = size
-                                                            # Determine file type from extension
-                                                            ext = os.path.splitext(name)[1].lower()
-                                                            if ext in ['.mp4', '.mov', '.avi', '.mkv']:
-                                                                self.type = 'video/mp4'
-                                                            elif ext in ['.mp3', '.wav', '.aac', '.ogg', '.flac']:
-                                                                self.type = 'audio/mp3'
-                                                            elif ext == '.pdf':
-                                                                self.type = 'application/pdf'
-                                                            elif ext == '.docx':
-                                                                self.type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                                                            elif ext == '.txt':
-                                                                self.type = 'text/plain'
-                                                            else:
-                                                                self.type = 'application/octet-stream'
-                                                        
-                                                        def getvalue(self):
-                                                            return self.content
-                                                    
+                                                    # Create a file-like object using the existing BackendFile class
                                                     backend_file = BackendFile(
                                                         file_info['filename'], 
                                                         download_response.content,
@@ -529,15 +554,21 @@ def show_training_discovery_page():
                                 st.session_state.process_backend_files = False
                     
                     # Optional: View and process existing backend files
-                    col1, col2 = st.columns(2)
+                    col1, col2, col3 = st.columns(3)
                     with col1:
-                        if st.button("👁️ View Files in Backend Storage"):
+                        if st.button("👁️ View Current Session Files"):
                             try:
-                                response = requests.get("http://localhost:8000/files/")
+                                response = requests.get("http://localhost:8000/files/session/")
                                 if response.status_code == 200:
-                                    backend_file_list = response.json().get('files', [])
+                                    session_data = response.json()
+                                    backend_file_list = session_data.get('files', [])
+                                    session_id = session_data.get('session_id', 'Unknown')
+                                    total_files = session_data.get('total_files', 0)
+                                    
+                                    st.markdown(f"#### 📂 Current Session Files (Session: {session_id[:8]}...)")
+                                    st.info(f"📊 Total files in session: {total_files}")
+                                    
                                     if backend_file_list:
-                                        st.markdown("#### 📂 Files in Backend Storage")
                                         for file_info in backend_file_list:
                                             col1, col2, col3 = st.columns([3, 1, 1])
                                             with col1:
@@ -545,7 +576,38 @@ def show_training_discovery_page():
                                             with col2:
                                                 st.write(f"{file_info['size']} bytes")
                                             with col3:
-                                                if st.button(f"🗑️", key=f"del_{file_info['filename']}"):
+                                                if st.button(f"🗑️", key=f"del_session_{file_info['filename']}"):
+                                                    try:
+                                                        response = requests.delete(f"http://localhost:8000/files/{file_info['filename']}")
+                                                        if response.status_code == 200:
+                                                            st.success(f"Deleted {file_info['filename']}")
+                                                            st.rerun()
+                                                        else:
+                                                            st.error(f"Failed to delete {file_info['filename']}")
+                                                    except Exception as e:
+                                                        st.error(f"Error deleting {file_info['filename']}: {str(e)}")
+                                    else:
+                                        st.info("No files in current session.")
+                            except Exception as e:
+                                st.warning(f"Could not fetch session files: {str(e)}")
+                    
+                    with col2:
+                        if st.button("🗂️ View All Backend Files"):
+                            try:
+                                response = requests.get("http://localhost:8000/files/")
+                                if response.status_code == 200:
+                                    backend_file_list = response.json().get('files', [])
+                                    if backend_file_list:
+                                        st.markdown("#### 📂 All Files in Backend Storage")
+                                        st.warning("⚠️ This shows ALL files ever uploaded, not just current session")
+                                        for file_info in backend_file_list:
+                                            col1, col2, col3 = st.columns([3, 1, 1])
+                                            with col1:
+                                                st.write(f"📄 {file_info['filename']}")
+                                            with col2:
+                                                st.write(f"{file_info['size']} bytes")
+                                            with col3:
+                                                if st.button(f"🗑️", key=f"del_all_{file_info['filename']}"):
                                                     try:
                                                         response = requests.delete(f"http://localhost:8000/files/{file_info['filename']}")
                                                         if response.status_code == 200:
@@ -560,45 +622,39 @@ def show_training_discovery_page():
                             except Exception as e:
                                 st.warning(f"Could not fetch backend files: {str(e)}")
                     
-                    with col2:
-                        if st.button("🔄 Process Backend Files"):
+                    with col3:
+                        if st.button("🆕 Start New Session"):
                             try:
-                                response = requests.get("http://localhost:8000/files/")
+                                response = requests.post("http://localhost:8000/session/new/")
                                 if response.status_code == 200:
-                                    backend_file_list = response.json().get('files', [])
-                                    if backend_file_list:
-                                        st.info(f"Processing {len(backend_file_list)} files from backend...")
+                                    session_data = response.json()
+                                    st.success(f"✅ New session started: {session_data.get('session_id', 'Unknown')[:8]}...")
+                                    st.info("🔄 Previous session files have been cleared")
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to start new session")
+                            except Exception as e:
+                                st.error(f"Error starting new session: {str(e)}")
+                    
+                    # Process Backend Files section
+                    st.markdown("#### 🔄 Process Backend Files")
+                    if st.button("🔄 Process Current Session Files"):
+                        try:
+                            response = requests.get("http://localhost:8000/files/session/")
+                            if response.status_code == 200:
+                                session_data = response.json()
+                                backend_file_list = session_data.get('files', [])
+                                session_id = session_data.get('session_id', 'Unknown')
+                                total_files = session_data.get('total_files', 0)
                                         
                                         # Download and create proper file objects for processing
+                                if backend_file_list:
                                         for file_info in backend_file_list:
                                             try:
                                                 # Download file from backend
                                                 download_response = requests.get(f"http://localhost:8000/files/{file_info['filename']}/download")
                                                 if download_response.status_code == 200:
                                                     # Create a file-like object
-                                                    class BackendFile:
-                                                        def __init__(self, name, content, size):
-                                                            self.name = name
-                                                            self.content = content
-                                                            self.size = size
-                                                            # Determine file type from extension
-                                                            ext = os.path.splitext(name)[1].lower()
-                                                            if ext in ['.mp4', '.mov', '.avi', '.mkv']:
-                                                                self.type = 'video/mp4'
-                                                            elif ext in ['.mp3', '.wav', '.aac', '.ogg', '.flac']:
-                                                                self.type = 'audio/mp3'
-                                                            elif ext == '.pdf':
-                                                                self.type = 'application/pdf'
-                                                            elif ext == '.docx':
-                                                                self.type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-                                                            elif ext == '.txt':
-                                                                self.type = 'text/plain'
-                                                            else:
-                                                                self.type = 'application/octet-stream'
-                                                        
-                                                        def getvalue(self):
-                                                            return self.content
-                                                    
                                                     backend_file = BackendFile(
                                                         file_info['filename'], 
                                                         download_response.content,
@@ -618,17 +674,12 @@ def show_training_discovery_page():
                                     else:
                                         st.info("No files in backend storage to process.")
                                 else:
-                                    st.error("Failed to fetch backend files.")
+                                st.error("❌ Backend server responded with error")
                             except Exception as e:
                                 st.error(f"Error processing backend files: {str(e)}")
                         
-                else:
-                    st.error("❌ Backend server responded with error")
-            except requests.exceptions.ConnectionError:
-                st.error("❌ Backend server not running. Start it with: `python upload_backend.py`")
-                st.code("python upload_backend.py")
             except Exception as e:
-                st.error(f"❌ Error connecting to backend: {str(e)}")
+                st.error(f"Error checking backend server or processing backend files: {str(e)}")
         
         # File categorization
         extracted_file_contents = {}
@@ -646,7 +697,7 @@ def show_training_discovery_page():
         if all_files_to_process:
             st.markdown("#### 📂 Categorize Your Files")
             file_categories = {}
-            for uploaded_file in all_files_to_process:
+            for i, uploaded_file in enumerate(all_files_to_process):
                 col1, col2 = st.columns([3, 1])
                 with col1:
                     st.write(f"📄 {uploaded_file.name}")
@@ -654,7 +705,7 @@ def show_training_discovery_page():
                     category = st.selectbox(
                         f"Category for {uploaded_file.name}",
                         ["Process Documentation", "Training Materials", "Policies & Procedures", "Technical Guides", "User Manuals", "Other"],
-                        key=f"cat_{uploaded_file.name}"
+                        key=f"cat_{uploaded_file.name}_{i}"  # Add index to make key unique
                     )
                     file_categories[uploaded_file.name] = category
                 # --- Extract text from file ---
@@ -662,7 +713,12 @@ def show_training_discovery_page():
                 mime_type, _ = mimetypes.guess_type(uploaded_file.name)
                 if uploaded_file.type == "application/pdf":
                     try:
-                        pdf_reader = PyPDF2.PdfReader(uploaded_file)
+                        # Create a file-like object from the uploaded file
+                        pdf_file = uploaded_file.getvalue()
+                        # Ensure we have bytes for PyPDF2
+                        if isinstance(pdf_file, str):
+                            pdf_file = pdf_file.encode('utf-8')
+                        pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_file))
                         for page in pdf_reader.pages:
                             file_text += page.extract_text() or ""
                     except Exception as e:
@@ -918,6 +974,8 @@ def show_training_discovery_page():
                         st.error("Failed to fetch backend files")
                 except Exception as e:
                     st.error(f"Error processing backend files: {str(e)}")
+
+        # File categorization and pathway generation continues here...
         
         st.markdown("### Generate Your Semantically Aligned Pathway")
         st.markdown("Click the button below to generate a pathway using AI based on your training context and content. Content will be analyzed semantically to identify topics relevant to your training goals.")
@@ -932,6 +990,12 @@ def show_training_discovery_page():
         bypass_filtering = st.checkbox(
             "Include all file content (bypass goal alignment)",
             help="If checked, all content from files will be included regardless of relevance to training goals"
+        )
+        
+        # Add option to preserve original content
+        preserve_original_content = st.checkbox(
+            "Preserve original content (minimal AI transformation)",
+            help="If checked, original file content will be preserved with minimal AI transformation. Useful for already structured training materials."
         )
         
         # Show goal alignment information
@@ -1016,7 +1080,7 @@ def show_training_discovery_page():
                             else:
                                 st.info("🎯 Using goal alignment - filtering content to match your training objectives")
                             
-                            generated_pathways_data = gemini_generate_complete_pathway(context, extracted_file_contents, inventory, bypass_filtering=bypass_filtering)
+                            generated_pathways_data = gemini_generate_complete_pathway(context, extracted_file_contents, inventory, bypass_filtering=bypass_filtering, preserve_original_content=preserve_original_content)
                             st.write(f"📋 AI Response: {generated_pathways_data}")
                             
                             if generated_pathways_data:
@@ -1123,7 +1187,8 @@ def show_training_discovery_page():
                         'title': module['title'],
                         'description': module['description'],
                         'content': module.get('content', ''),
-                        'source': ['AI Generated']
+                        'source': module.get('source', ['Content from uploaded files']),
+                        'content_types': module.get('content_types', [])
                     })
             st.session_state['editable_pathways'] = editable_pathways
             st.session_state['editable_pathways_pathway_idx'] = st.session_state['selected_pathway_idx']
@@ -1156,12 +1221,26 @@ def show_training_discovery_page():
             i = 0
             while i < len(mods):
                 mod = mods[i]
-                col1, col2, col3, col4 = st.columns([3, 1, 1, 2])
+                col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 2, 2])
                 with col1:
                     new_title = st.text_input(f"Title ({section}-{i})", mod['title'], key=f"title_{section}_{i}")
                     new_desc = st.text_input(f"Description ({section}-{i})", mod.get('description', ''), key=f"desc_{section}_{i}")
                     new_content = st.text_area(f"Content ({section}-{i})", mod['content'], key=f"content_{section}_{i}")
                     st.markdown(f"**{i+1}. {new_title}**")
+                
+                # Display content types on the right side
+                with col4:
+                    st.markdown("**🎨 Content Types:**")
+                    content_types = mod.get('content_types', [])
+                    if content_types:
+                        for j, content_type in enumerate(content_types):
+                            with st.expander(f"📋 {content_type.get('title', f'Content Type {j+1}')}"):
+                                st.markdown(f"**Type:** {content_type.get('type', 'Unknown')}")
+                                st.markdown(f"**Description:** {content_type.get('description', 'No description')}")
+                                st.markdown(f"**Content:** {content_type.get('content', 'No content')}")
+                    else:
+                        st.info("No content types generated for this module")
+                
                 with col2:
                     if st.button("⬆️", key=f"up_{section}_{i}") and i > 0:
                         mods[i-1], mods[i] = mods[i], mods[i-1]
@@ -1176,7 +1255,9 @@ def show_training_discovery_page():
                         mods.pop(i)
                         st.session_state['editable_pathways'] = editable_pathways
                         st.experimental_rerun()
-                with col4:
+                
+                # Move section controls
+                with col5:
                     move_to_section = st.selectbox(
                         "Move to section",
                         section_names,

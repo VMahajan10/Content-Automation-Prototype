@@ -1,153 +1,241 @@
-# 🤖 Automated Content Generator with Vadoo AI
+# 🚀 Gateway Content Automation
 
-An AI-powered content generation app that creates comprehensive training materials from uploaded files (.txt, .pdf, .docx) using Google Gemini API and Vadoo AI for video generation.
+An AI-powered training content generation and management platform that creates comprehensive training pathways, mind maps, and multimedia content from uploaded files using Google Gemini API.
 
-## ✨ Features
+## ✨ Core Features
 
-- **📄 Multi-format Support**: Upload .txt, .pdf, and .docx files
-- **🤖 AI Content Generation**: Powered by Google Gemini 1.5 Pro
-- **🎬 AI Video Generation**: Create videos with Vadoo AI
-- **📚 Comprehensive Output**: Generate overviews, key points, analysis, applications, flashcards, and visual resources
-- **🎥 Interactive Video Creation**: Generate AI videos with voiceover and custom settings
-- **🃏 Interactive Flashcards**: Learn with AI-generated flashcards
-- **🎨 Visual Resources**: Get suggestions for visual learning materials
-- **🚀 Automatic Backend Management**: Backend server starts automatically with the app
-- **📁 Large File Support**: Handle files larger than 200MB via backend upload
-- **🔄 Real-time File Processing**: Process uploaded files immediately for pathway generation
+### 🤖 AI-Powered Training Discovery
+- **Comprehensive Needs Analysis**: Multi-step training assessment and planning
+- **Goal-Aligned Content Generation**: AI filters content to match specific training objectives
+- **Semantic Content Processing**: Advanced AI analysis for relevant training information
+- **Professional Content Cleaning**: Automatically transforms conversational content into professional training material
 
-## 🔧 Backend Features
+### 🛤️ Training Pathway Generation
+- **Multi-Pathway Creation**: Generate multiple training pathways from single content
+- **Section-Based Organization**: Structured learning modules with clear progression
+- **Content Type Generation**: Automatic creation of flashcards, quizzes, videos, and more
+- **Enhanced Content Mode**: Comprehensive modules with detailed explanations
 
-The app includes a FastAPI backend server that provides:
+### 🧠 Mind Mapping & Visualization
+- **Markmap Component**: Local mind map visualization
+- **Hierarchical Organization**: Structured knowledge representation
+- **Interactive Visualization**: Dynamic mind map rendering
+- **Export Capabilities**: Share mind maps across platforms
 
-- **Large File Upload**: Handle files up to several GB in size
-- **File Storage**: Secure file storage in `uploaded_files/` directory
-- **File Management**: List, download, and delete uploaded files
-- **CORS Support**: Cross-origin requests for web integration
-- **Automatic Startup**: Backend starts automatically when running the app
-- **Health Checks**: Monitor backend server status
+### 💬 AI Chatbot Assistant
+- **Context-Aware Responses**: Understands training content and pathway structure
+- **File-Based Updates**: Upload new files and update specific modules/sections
+- **Content Search**: Search for specific topics across pathways
+- **Past Pathway Integration**: Reference and merge content from previous sessions
+- **Professional Tone Control**: Adjust module tone and style
+
+### 📁 Advanced File Processing
+- **Multi-Format Support**: PDF, DOCX, TXT, MP4, AVI, MOV files
+- **Large File Handling**: Backend server for files >200MB
+- **Audio/Video Transcription**: Automatic speech-to-text conversion
+- **Parallel Processing**: Fast AI processing with multiple workers
+- **Fallback Extraction**: Robust content extraction when AI fails
+
+### 🎨 Content Management
+- **Editable Pathways**: Modify modules, sections, and content in real-time
+- **Module Reordering**: Drag-and-drop module organization
+- **Section Management**: Move modules between sections
+- **Content Types**: Generate flashcards, quizzes, videos, and documents
+- **Export Options**: JSON export for external use
 
 ## 🚀 Quick Start
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd Gateway-Content-Automation
-   ```
+### 1. **Installation**
+```bash
+git clone <repository-url>
+cd Gateway-Content-Automation
+pip install -r requirements.txt
+```
 
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 2. **Configuration**
+```bash
+cp env_template.txt .env
+# Edit .env with your API keys:
+# GEMINI_API_KEY=your_gemini_api_key
+# MINDMEISTER_CLIENT_ID=your_mindmeister_client_id
+# MINDMEISTER_CLIENT_SECRET=your_mindmeister_client_secret
+```
 
-3. **Set up environment variables**
-   ```bash
-   cp env_template.txt .env
-   # Edit .env with your API keys
-   ```
+### 3. **Launch Application**
+```bash
+# Automatic startup (recommended)
+python start_app.py
 
-4. **Run the app** (Choose one option)
-
-   **Option A: Automatic Backend Startup (Recommended)**
-   ```bash
-   python start_app.py
-   ```
-   This automatically starts the backend server and then launches the Streamlit app.
-
-   **Option B: Manual Backend + Frontend**
-   ```bash
-   # Terminal 1: Start backend server
-   python upload_backend.py
-   
-   # Terminal 2: Start Streamlit app
-   streamlit run app.py
-   ```
-
-   **Option C: App with Auto-Backend Detection**
-   ```bash
-   streamlit run app.py
-   ```
-   The app will automatically detect and start the backend server if needed.
+# Or manual startup
+streamlit run app.py
+```
 
 ## 🔧 Configuration
 
 ### Required API Keys
 
-1. **Google Gemini API Key**
-   - Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - Add to `.env`: `GEMINI_API_KEY=your_key_here`
+1. **Google Gemini API Key** (Required)
+   - Get from [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Powers AI content generation and chatbot
 
-2. **Vadoo AI API Key** (Optional - for video generation)
-   - Get your API key from [Vadoo AI](https://vadoo.tv)
-   - Add to `.env`: `VADOO_API_KEY=your_key_here`
+2. **Additional APIs** (Optional - for extended features)
+   - Various third-party integrations available
+   - Enables additional content generation capabilities
 
-## 📋 Features Breakdown
+## 📋 Feature Breakdown
 
-### Content Processing
-- **Multi-format Support**: Handles .txt, .pdf, and .docx files
-- **Smart Content Extraction**: Automatically extracts and processes text content
-- **AI-powered Analysis**: Uses Gemini to understand and structure content
+### Training Discovery Process
+1. **Training Context**: Define audience, goals, timeline, and industry
+2. **File Inventory**: Upload existing materials and categorize content
+3. **Pathway Generation**: AI creates goal-aligned training pathways
+4. **Review & Refine**: Edit and customize generated content
 
-### Generated Materials
-1. **Content Overview**: High-level summary of uploaded content
-2. **Key Points**: Main concepts and important takeaways
-3. **Detailed Analysis**: In-depth breakdown and insights
-4. **Practical Applications**: Real-world usage examples
-5. **Interactive Flashcards**: Learning aids for memorization
-6. **AI Video Generation**: Create videos with Vadoo AI
-7. **Visual Resources**: Suggestions for visual learning materials
+### AI Chatbot Capabilities
+- **Module Updates**: "Update module 2 with new file"
+- **Section Management**: "Add content to safety section"
+- **Pathway Integration**: "Update pathway 1 section 3"
+- **Content Search**: "Find safety procedures in pathways"
+- **Tone Adjustment**: "Make module 1 more professional"
+- **Past Pathway Access**: "Show past pathways" or "Integrate from pathway 2"
 
-### Video Generation Features
-- **Vadoo AI Integration**: Professional AI video generation
-- **Custom Duration**: 1-10 minute videos
-- **Multiple Aspect Ratios**: 16:9, 9:16, 1:1
-- **AI Voiceover**: Built-in narration
-- **Custom Themes**: Professional styling options
-- **Educational Focus**: Optimized for training content
+### Content Processing Features
+- **Professional Cleaning**: Removes conversational elements and timestamps
+- **Semantic Analysis**: AI understands context and relevance
+- **Goal Alignment**: Content filtered to match training objectives
+- **Fallback Processing**: Robust extraction when AI unavailable
+- **Parallel Processing**: Fast multi-file processing
+
+### Generated Content Types
+1. **Training Modules**: Structured learning content
+2. **Interactive Flashcards**: Memory aids for key concepts
+3. **Assessment Quizzes**: Knowledge testing materials
+4. **Document Templates**: Professional training materials
+5. **Mind Maps**: Visual knowledge organization
+6. **Content Scripts**: Multimedia content preparation
 
 ## 🎯 Use Cases
 
-- **Employee Training**: Create onboarding materials from company documents
-- **Educational Content**: Generate study materials from textbooks
-- **Content Marketing**: Transform blog posts into video content
-- **Knowledge Management**: Organize and present information effectively
-- **Learning & Development**: Create interactive training modules
+### Corporate Training
+- **Employee Onboarding**: Create structured training pathways
+- **Process Training**: Document procedures and workflows
+- **Compliance Training**: Generate regulatory training materials
+- **Skill Development**: Build competency-based training
 
-## 💡 Tips for Best Results
+### Educational Content
+- **Course Development**: Transform materials into structured courses
+- **Study Materials**: Create comprehensive learning resources
+- **Knowledge Management**: Organize and present information
+- **Assessment Creation**: Generate quizzes and evaluations
 
-1. **Quality Input**: Use well-structured source documents
-2. **Clear Content**: Ensure uploaded files have clear, readable text
-3. **Specific Prompts**: Be specific about your target audience and goals
-4. **Video Settings**: Choose appropriate duration and aspect ratio for your content
-5. **Iterative Refinement**: Use the generated content as a starting point
+### Content Creation
+- **Training Documentation**: Create professional training manuals
+- **Presentations**: Generate slide content and materials
+- **Interactive Learning**: Build engaging training experiences
+- **Content Scripts**: Prepare multimedia content outlines
+
+## 💡 Best Practices
+
+### Content Preparation
+1. **Quality Source Materials**: Use well-structured documents
+2. **Clear Training Goals**: Define specific learning objectives
+3. **Audience Definition**: Specify target learner characteristics
+4. **Industry Context**: Provide relevant industry information
+
+### AI Chatbot Usage
+1. **Be Specific**: "Update module 2 with new safety procedures"
+2. **Use File Uploads**: Upload files before making update requests
+3. **Reference Past Content**: "Integrate from pathway 1 section 2"
+4. **Search for Content**: "Find quality control procedures"
+
+### Pathway Management
+1. **Review Generated Content**: Check AI-generated pathways
+2. **Customize Modules**: Edit titles, descriptions, and content
+3. **Reorganize Structure**: Move modules between sections
+4. **Export Results**: Save pathways for external use
 
 ## 🔒 Privacy & Security
 
-- All processing happens locally or through secure API calls
-- No content is stored permanently
-- API keys are kept secure in environment variables
-- Generated content is temporary and not saved
+- **Local Processing**: File processing happens on your system
+- **Secure API Calls**: Encrypted communication with AI services
+- **Temporary Storage**: Content not permanently stored
+- **Environment Variables**: API keys secured in .env file
 
-## 🛠️ Technical Details
+## 🛠️ Technical Architecture
 
-- **Framework**: Streamlit
-- **AI Model**: Google Gemini 1.5 Pro
-- **Video Generation**: Vadoo AI
-- **File Processing**: PyPDF2, python-docx
-- **Environment**: Python 3.8+
+### Frontend
+- **Streamlit**: Modern web interface
+- **Real-time Updates**: Live content editing and preview
+- **Responsive Design**: Works on desktop and mobile
 
-## 📞 Support
+### Backend
+- **FastAPI Server**: Large file upload handling
+- **File Management**: Secure storage and retrieval
+- **CORS Support**: Cross-origin request handling
 
-For issues or questions:
-1. Check the troubleshooting section
+### AI Integration
+- **Google Gemini**: Advanced content generation and analysis
+- **Parallel Processing**: Multi-threaded AI operations
+- **Fallback Systems**: Robust error handling and recovery
+- **Caching**: Optimized API call management
+
+### Content Processing
+- **Multi-format Support**: PDF, DOCX, TXT, audio, video
+- **Professional Cleaning**: Conversational content transformation
+- **Semantic Analysis**: Context-aware content understanding
+- **Goal Alignment**: Training objective filtering
+
+## 📊 Performance Features
+
+- **Parallel Processing**: Multiple AI workers for speed
+- **Caching System**: Reduces API calls and improves performance
+- **Fallback Extraction**: Works when AI is unavailable
+- **Large File Support**: Handles files up to several GB
+- **Real-time Updates**: Instant content modification
+
+## 🔄 Recent Updates
+
+### v3.0 - AI Chatbot & Professional Content
+- **AI Chatbot**: Context-aware assistant for pathway management
+- **Professional Content Cleaning**: Transform conversational content
+- **File-Based Updates**: Upload files and update specific modules
+- **Content Search**: Find topics across pathways
+- **Past Pathway Integration**: Reference previous sessions
+
+### v2.0 - Enhanced Pathway Generation
+- **Multi-Pathway Creation**: Generate multiple training pathways
+- **Enhanced Content Mode**: More comprehensive modules
+- **Content Type Generation**: Automatic flashcard/quiz creation
+- **Semantic Analysis**: Advanced AI content understanding
+
+### v1.0 - Core Features
+- **Training Discovery**: Comprehensive needs analysis
+- **Mind Mapping**: MindMeister integration
+- **File Processing**: Multi-format support
+- **Basic Pathway Generation**: AI-powered content creation
+
+## 📞 Support & Troubleshooting
+
+### Common Issues
+1. **API Key Configuration**: Ensure all API keys are properly set
+2. **File Upload Problems**: Check file format and size limits
+3. **AI Processing Errors**: Verify internet connection and API quotas
+4. **Backend Connection**: Ensure backend server is running
+
+### Getting Help
+1. Check the troubleshooting documentation
 2. Review API key configuration
-3. Ensure all dependencies are installed
-4. Check file format compatibility
+3. Verify all dependencies are installed
+4. Test with smaller files first
 
-## 🔄 Updates
+## 🎯 Roadmap
 
-- **v2.0**: Added Vadoo AI video generation
-- **v1.0**: Initial release with Gemini integration
+### Upcoming Features
+- **Advanced Content Generation**: More content creation options
+- **Collaborative Editing**: Multi-user pathway editing
+- **Advanced Analytics**: Training effectiveness tracking
+- **Mobile App**: Native mobile application
+- **Integration APIs**: Connect with LMS platforms
 
 ---
 
-**Note**: This app requires valid API keys for full functionality. Video generation features require a Vadoo AI subscription. 
+**Note**: This platform requires valid API keys for full functionality. The AI chatbot and content generation features require a Google Gemini API subscription. 

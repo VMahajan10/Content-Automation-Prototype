@@ -1,84 +1,67 @@
 #!/usr/bin/env python3
 """
-Test script to verify conversational content transformation into professional training material
+Test file for professional content cleaning functionality
 """
 
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from modules.utils import create_cohesive_module_content, transform_conversational_to_professional
-
-def test_conversational_transformation():
-    """Test transformation of conversational content to professional training material"""
+def test_professional_content_cleaning():
+    """Test the professional content cleaning functionality"""
     
-    print("🧪 Testing Conversational to Professional Content Transformation")
-    print("=" * 70)
+    # Import the functions
+    from modules.utils import clean_conversational_content, make_content_professional
     
-    # Sample conversational content from the transcript
+    # Test conversational content
     conversational_content = """
-    What you just showed me is first you have the truss, you put it together with all the different components and then you make the deck out of that. Then in here, then we go to the next stage of the abutment assembly. Because what we can do over this weekend is place everything together, come up with the workflow of how you can film everything.
+    1:03:04 - Mike Wright
+    If you just have a look at it today or tomorrow morning, Think your way through it.
+    
+    1:03:14 - MaiLinh Ho
+    Just look straight into me tomorrow and we'll just sort them out So it's getting clear in your head happy to do that Perfect.
+    
+    So yeah, basically we need to um, you know, sort of work on this process and make sure everything is, like, you know, properly set up.
     """
     
-    # Training context
-    training_context = {
-        'training_type': 'Process Training',
-        'target_audience': 'fabricators',
-        'industry': 'manufacturing',
-        'primary_goals': 'understand truss assembly process',
-        'success_metrics': 'feedback surveys'
-    }
+    print("=== Testing Professional Content Cleaning ===")
+    print(f"Original content:\n{conversational_content}")
     
-    print("📝 **Original Conversational Content:**")
-    print(conversational_content)
-    print("\n" + "="*50 + "\n")
+    # Test conversational cleaning
+    cleaned_content = clean_conversational_content(conversational_content)
+    print(f"\nAfter conversational cleaning:\n{cleaned_content}")
     
-    # Test direct transformation
-    print("🔄 **Transformed Professional Content:**")
-    professional_content = transform_conversational_to_professional(
-        conversational_content, 'process', training_context
-    )
-    print(professional_content)
-    print("\n" + "="*50 + "\n")
+    # Test professional transformation
+    professional_content = make_content_professional(conversational_content)
+    print(f"\nAfter professional transformation:\n{professional_content}")
     
-    # Test full module creation
-    print("📋 **Full Module Creation:**")
-    module = create_cohesive_module_content(conversational_content, training_context, 1)
+    # Test with more casual language
+    casual_content = """
+    So we need to get this done, you know? Just check it out and make sure it's all good.
+    We'll work on it tomorrow and figure out what needs to be done.
+    Basically, we just need to set it up properly and handle any issues that come up.
+    """
     
-    if module:
-        print(f"Title: {module['title']}")
-        print(f"Description: {module['description']}")
-        print(f"Content: {module['content'][:200]}...")
-        print(f"Core Topic: {module['core_topic']}")
-    else:
-        print("❌ Module creation failed")
+    print(f"\n=== Testing Casual Language Transformation ===")
+    print(f"Original casual content:\n{casual_content}")
     
-    print("\n" + "="*50 + "\n")
+    professional_casual = make_content_professional(casual_content)
+    print(f"\nAfter professional transformation:\n{professional_casual}")
     
-    # Test multiple conversational examples
-    conversational_examples = [
-        "That's the truss, but it hasn't got the zigzags in yet.",
-        "And the advantage of this is that normally they just cut it...",
-        "This is the biggest bridge we make and they only make the ba...",
-        "You're a bit lagging, but I think we can hear you.",
-        "Backgrounds, filters, appearance.",
-        "Interesting to learn about it."
-    ]
+    # Test with incomplete sentences
+    incomplete_content = """
+    We need to review the process and ensure proper implementation.
+    So
+    If you just
+    """
     
-    print("🔄 **Multiple Examples Transformation:**")
-    for i, example in enumerate(conversational_examples, 1):
-        print(f"\nExample {i}:")
-        print(f"Original: {example}")
-        transformed = transform_conversational_to_professional(example, 'process', training_context)
-        print(f"Transformed: {transformed[:150]}...")
+    print(f"\n=== Testing Incomplete Sentence Cleaning ===")
+    print(f"Original incomplete content:\n{incomplete_content}")
     
-    print("\n✅ **Test completed successfully!**")
-    print("\n🎯 **Key Improvements:**")
-    print("• Conversational fillers removed")
-    print("• Professional training language added")
-    print("• Structured learning objectives")
-    print("• Industry-specific terminology")
-    print("• Clear process descriptions")
+    cleaned_incomplete = make_content_professional(incomplete_content)
+    print(f"\nAfter professional transformation:\n{cleaned_incomplete}")
+    
+    print("\n✅ Professional content cleaning tests completed!")
 
 if __name__ == "__main__":
-    test_conversational_transformation() 
+    test_professional_content_cleaning() 

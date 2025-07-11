@@ -8,31 +8,68 @@ import re
 import concurrent.futures
 import streamlit as st
 from modules.config import model
+import threading
+
+# Thread-safe log buffer for background thread logs
+log_buffer = []
+log_lock = threading.Lock()
 
 def get_parallel_config():
     """
     Get configuration for parallel processing based on system capabilities
-    (Optimized for speed: reduced AI calls and faster processing)
+    (Optimized for maximum speed while maintaining quality and quantity)
     """
     return {
-        'max_file_workers': 2,      # Reduced workers to avoid timeouts
-        'max_section_workers': 2,   # Reduced AI workers
-        'max_topic_workers': 2,     # Reduced topic analysis workers
-        'timeout_seconds': 60,      # Reduced timeout for faster processing
-        'max_modules_per_file': 2,  # Reduced module limit for speed
-        'batch_ai_calls': False,    # Disable batching to avoid timeouts
-        'parallel_ai_processing': False  # Disable parallel AI for reliability
+        'max_file_workers': 6,      # Increased workers for maximum parallel processing
+        'max_section_workers': 4,   # Increased AI workers for faster processing
+        'max_topic_workers': 4,     # Increased topic analysis workers
+        'timeout_seconds': 60,      # Reduced timeout for faster processing while maintaining quality
+        'max_modules_per_file': 8,  # Increased module limit for more content
+        'batch_ai_calls': True,     # Enable batching for efficiency
+        'parallel_ai_processing': True,  # Enable parallel AI for speed
+        'min_content_length': 30,   # Reduced minimum for more modules
+        'max_pathways': 5,          # Increased pathway limit
+        'max_sections_per_pathway': 6,  # Increased sections per pathway
+        'max_modules_per_section': 10,   # Increased modules per section
+        'content_expansion_factor': 1.2,  # Slightly reduced for speed
+        'concurrent_files': 3,      # Process 3 files simultaneously for stability
+        'ai_request_timeout': 120,  # Longer AI request timeout for reliability
+        'batch_size': 3,            # Process AI calls in batches of 3
+        'cache_responses': True,    # Cache AI responses for speed
+        'preload_content': True     # Preload content for faster processing
     }
 
 def debug_print(message, is_error=False):
     """
-    Print debug information to both console and Streamlit
+    Print debug information to both console and (main thread only) Streamlit
     """
     print(message)
-    if is_error:
-        st.error(message)
+    # Only log to Streamlit if in main thread
+    if threading.current_thread() == threading.main_thread():
+        try:
+            if is_error:
+                st.error(message)
+            else:
+                st.info(message)
+        except Exception:
+            pass
     else:
-        st.info(message)
+        # In background thread, store log for later display
+        with log_lock:
+            log_buffer.append((message, is_error))
+
+def flush_debug_logs_to_streamlit():
+    """
+    Flush all logs from the buffer to Streamlit (call from main thread only)
+    """
+    import streamlit as st
+    with log_lock:
+        for message, is_error in log_buffer:
+            if is_error:
+                st.error(message)
+            else:
+                st.info(message)
+        log_buffer.clear()
 
 def extract_and_transform_content(content, training_context):
     """
@@ -369,6 +406,140 @@ def clean_content_basic(content):
         
     except Exception as e:
         return content
+
+def clean_conversational_content(content):
+    """
+    Remove conversational elements and make content more professional
+    """
+    if not content:
+        return ""
+    
+    import re
+    
+    # Remove timestamp patterns (e.g., "1:03:04 - Mike Wright")
+    content = re.sub(r'\d{1,2}:\d{2}:\d{2}\s*-\s*[A-Za-z\s]+', '', content)
+    
+    # Remove speaker prefixes (e.g., "Mike Wright:", "John:")
+    content = re.sub(r'^[A-Za-z\s]+:\s*', '', content, flags=re.MULTILINE)
+    
+    # Remove conversational phrases more thoroughly
+    conversational_phrases = [
+        r'\b(um|uh|er|ah)\b',
+        r'\b(you know|like|sort of|kind of)\b',
+        r'\b(think your way through|sort them out|getting clear in your head)\b',
+        r'\b(happy to do that|perfect|great|okay|sure)\b',
+        r'\b(just|basically|actually|really)\b',
+        r'\b(so|well|right|yeah|yep|nope)\b',
+        r'\b(tomorrow morning|look straight into me)\b',
+        r'\b(we\'ll just|if you just|just look)\b',
+        r'\b(yeah|yep|nope|nah)\b',
+        r'\b(okay|ok|k)\b',
+        r'\b(so yeah|so um|so uh)\b',
+        r'\b(you see|you know what|you know what I mean)\b'
+    ]
+    
+    for phrase in conversational_phrases:
+        content = re.sub(phrase, '', content, flags=re.IGNORECASE)
+    
+    # Remove incomplete sentences and fragments
+    content = re.sub(r'\bSo\s*$', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'\bIf\s+you\s+just\s+.*?$', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'\bJust\s+.*?$', '', content, flags=re.IGNORECASE)
+    
+    # Clean up punctuation and spacing
+    content = re.sub(r'\s+', ' ', content)
+    content = re.sub(r'\s*([.,!?])\s*', r'\1 ', content)
+    
+    # Remove empty lines and clean up
+    lines = content.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        line = line.strip()
+        if line and len(line) > 15:  # Only keep substantial lines
+            cleaned_lines.append(line)
+    
+    content = ' '.join(cleaned_lines)
+    
+    # Final cleanup - remove extra spaces and punctuation
+    content = re.sub(r'\s+', ' ', content)
+    content = re.sub(r'[,\s]+$', '', content)  # Remove trailing commas and spaces
+    content = content.strip()
+    
+    return content
+
+def make_content_professional(content):
+    """
+    Transform conversational content into professional training material
+    """
+    if not content:
+        return ""
+    
+    import re
+    
+    # First clean conversational elements
+    content = clean_conversational_content(content)
+    
+    # If content is too short after cleaning, return empty
+    if len(content.strip()) < 20:
+        return ""
+    
+    # Transform casual language to professional language
+    professional_replacements = {
+        r'\bget\b': 'obtain',
+        r'\bcheck\b': 'verify',
+        r'\blook at\b': 'review',
+        r'\bthink about\b': 'consider',
+        r'\bwork on\b': 'develop',
+        r'\bdo\b': 'perform',
+        r'\bmake sure\b': 'ensure',
+        r'\bput in\b': 'implement',
+        r'\bset up\b': 'establish',
+        r'\bgo through\b': 'review',
+        r'\bdeal with\b': 'address',
+        r'\bhandle\b': 'manage',
+        r'\btake care of\b': 'manage',
+        r'\bfigure out\b': 'determine',
+        r'\bfind out\b': 'identify',
+        r'\bcome up with\b': 'develop',
+        r'\bwork out\b': 'resolve',
+        r'\bsort out\b': 'organize',
+        r'\bclear up\b': 'clarify',
+        r'\bset up\b': 'establish',
+        r'\bgood\b': 'satisfactory',
+        r'\bneed to\b': 'must',
+        r'\bhave to\b': 'must',
+        r'\bgonna\b': 'going to',
+        r'\bwanna\b': 'want to',
+        r'\bgotta\b': 'got to'
+    }
+    
+    for casual, professional in professional_replacements.items():
+        content = re.sub(casual, professional, content, flags=re.IGNORECASE)
+    
+    # Clean up any remaining conversational elements
+    content = re.sub(r'\b(um|uh|er|ah)\b', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'\b(yeah|yep|nope|nah)\b', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'\b(okay|ok|k)\b', '', content, flags=re.IGNORECASE)
+    
+    # Remove incomplete sentences and fragments
+    content = re.sub(r'\bSo\s*$', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'\bJust\s+.*?$', '', content, flags=re.IGNORECASE)
+    content = re.sub(r'\bIf\s+you\s+just\s+.*?$', '', content, flags=re.IGNORECASE)
+    
+    # Clean up punctuation and spacing
+    content = re.sub(r'\s+', ' ', content)
+    content = re.sub(r'[,\s]+$', '', content)  # Remove trailing commas and spaces
+    content = content.strip()
+    
+    # Ensure sentences end properly
+    if content and not content.endswith(('.', '!', '?')):
+        content += '.'
+    
+    # Final validation - only return if content is substantial
+    if len(content.strip()) < 20:
+        return ""
+    
+    return content.strip()
 
 def get_training_keywords(training_context):
     """
@@ -1392,21 +1563,20 @@ def extract_modules_from_file_content(filename, content, training_context, bypas
                 # Use AI-powered module creation with optimized approach
                 cohesive_module = create_cohesive_module_content_optimized(info_section, training_context, i+1, batch_ai_calls)
                 if cohesive_module:
-                    # Add debugging source information to content
-                    debug_source = f"\n\n--- DEBUG SOURCE ---\nContent extracted from: {filename}\nModule created by: Cohesive module creation\nContent length: {len(cohesive_module['content'])} characters\nTraining goals: {training_context.get('primary_goals', 'Not specified')}\n--- END DEBUG SOURCE ---\n\n"
-                    content_with_debug = debug_source + cohesive_module['content']
+                    # Clean and professionalize the content
+                    professional_content = make_content_professional(cohesive_module['content'])
                     
                     modules.append({
                         'title': cohesive_module['title'],
                         'description': cohesive_module['description'],
-                        'content': content_with_debug,
+                        'content': professional_content,
                         'source': clean_source_field(f'Training information from {filename}'),
-                        'key_points': extract_key_points_from_content(info_section, training_context),
+                        'key_points': extract_key_points_from_content(professional_content, training_context),
                         'relevance_score': 0.9,  # High relevance since it's filtered and cohesive
                         'full_reason': f'Cohesive training content focused on {cohesive_module["core_topic"]}',
-                        'content_types': cohesive_module.get('content_types', generate_fallback_content_types(info_section, training_context))
+                        'content_types': cohesive_module.get('content_types', generate_fallback_content_types(professional_content, training_context))
                     })
-                    debug_print(f"✅ Module {i+1} created successfully with debug source info")
+                    debug_print(f"✅ Module {i+1} created successfully")
                 else:
                     debug_print(f"⚠️ Module {i+1} creation failed")
         
@@ -2282,53 +2452,68 @@ def generate_fallback_content_types(module_content, training_context):
         
         content_types = []
         
+        # Extract key topics from module content for more specific content generation
+        sentences = module_content.split('.')
+        key_topics = []
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if len(sentence) > 20:
+                # Extract nouns and key terms
+                words = sentence.split()
+                for word in words:
+                    if len(word) > 4 and word.lower() not in ['this', 'that', 'with', 'from', 'they', 'have', 'been', 'will', 'were', 'said', 'each', 'which', 'their', 'there', 'other', 'about', 'many', 'then', 'them', 'these', 'some', 'would', 'could', 'should']:
+                        key_topics.append(word.lower())
+        
+        # Get unique key topics
+        unique_topics = list(set(key_topics))[:5]  # Top 5 unique topics
+        
         # Determine content types based on content analysis and generate actual content
         if any(word in content_lower for word in ['procedure', 'process', 'step', 'method']):
-            # Generate actual list content
+            # Generate actual list content based on module topics
             list_content = generate_fallback_list_content(module_content, training_context)
             content_types.append({
                 'type': 'list',
-                'title': 'Step-by-Step Process',
+                'title': f'Key Steps for {unique_topics[0].title() if unique_topics else "Process"}',
                 'description': 'Organized list of procedural steps',
                 'content': list_content
             })
         
         if any(word in content_lower for word in ['safety', 'ppe', 'protective', 'hazard']):
-            # Generate actual flashcards content
+            # Generate actual flashcards content based on module topics
             flashcard_content = generate_fallback_flashcard_content(module_content, training_context)
             content_types.append({
                 'type': 'flashcards',
-                'title': 'Safety Key Points',
+                'title': f'Safety Guidelines for {unique_topics[0].title() if unique_topics else "Work"}',
                 'description': 'Important safety concepts for memorization',
                 'content': flashcard_content
             })
         
         if any(word in content_lower for word in ['quality', 'inspection', 'standard', 'requirement']):
-            # Generate actual knowledge check content
+            # Generate actual knowledge check content based on module topics
             quiz_content = generate_fallback_quiz_content(module_content, training_context)
             content_types.append({
                 'type': 'knowledge_check',
-                'title': 'Quality Standards Quiz',
+                'title': f'Quality Standards for {unique_topics[0].title() if unique_topics else "Process"}',
                 'description': 'Assessment of quality standards understanding',
                 'content': quiz_content
             })
         
         if any(word in content_lower for word in ['equipment', 'tool', 'operation', 'maintenance']):
-            # Generate video description
+            # Generate video description based on module topics
             video_content = generate_fallback_video_content(module_content, training_context)
             content_types.append({
                 'type': 'video',
-                'title': 'Equipment Operation Demo',
+                'title': f'Equipment Operation for {unique_topics[0].title() if unique_topics else "Process"}',
                 'description': 'Video demonstration of equipment operation',
                 'content': video_content
             })
         
         if any(word in content_lower for word in ['documentation', 'record', 'report', 'form']):
-            # Generate file template content
+            # Generate file template content based on module topics
             file_content = generate_fallback_file_content(module_content, training_context)
             content_types.append({
                 'type': 'file',
-                'title': 'Documentation Templates',
+                'title': f'Documentation for {unique_topics[0].title() if unique_topics else "Process"}',
                 'description': 'Downloadable templates and forms',
                 'content': file_content
             })
@@ -2338,7 +2523,7 @@ def generate_fallback_content_types(module_content, training_context):
             text_content = generate_fallback_text_content(module_content, training_context)
             content_types.append({
                 'type': 'text',
-                'title': 'Key Concepts',
+                'title': f'Key Concepts for {unique_topics[0].title() if unique_topics else "Training"}',
                 'description': 'Explanatory text for key concepts',
                 'content': text_content
             })
@@ -2348,7 +2533,7 @@ def generate_fallback_content_types(module_content, training_context):
             quiz_content = generate_fallback_quiz_content(module_content, training_context)
             content_types.append({
                 'type': 'knowledge_check',
-                'title': 'Understanding Check',
+                'title': f'Understanding Check for {unique_topics[0].title() if unique_topics else "Module"}',
                 'description': 'Assessment of module understanding',
                 'content': quiz_content
             })
@@ -2369,7 +2554,20 @@ def generate_fallback_text_content(module_content, training_context):
     try:
         sentences = module_content.split('.')
         key_sentences = [s.strip() for s in sentences if len(s.strip()) > 20][:3]
-        return ' '.join(key_sentences) + '.'
+        
+        # Extract key topics from the content
+        content_lower = module_content.lower()
+        key_topics = []
+        for sentence in key_sentences:
+            words = sentence.split()
+            for word in words:
+                if len(word) > 4 and word.lower() not in ['this', 'that', 'with', 'from', 'they', 'have', 'been', 'will', 'were', 'said', 'each', 'which', 'their', 'there', 'other', 'about', 'many', 'then', 'them', 'these', 'some', 'would', 'could', 'should']:
+                    key_topics.append(word.lower())
+        
+        unique_topics = list(set(key_topics))[:3]
+        topic_text = ', '.join(unique_topics) if unique_topics else "key concepts"
+        
+        return f"Detailed explanation of {topic_text} from the module content. This includes important procedures, safety considerations, and best practices relevant to the training objectives."
     except:
         return f"Detailed explanation of key concepts from the module content."
 
@@ -2378,7 +2576,29 @@ def generate_fallback_list_content(module_content, training_context):
     try:
         sentences = module_content.split('.')
         key_points = [s.strip() for s in sentences if len(s.strip()) > 15][:5]
-        return '\n• ' + '\n• '.join(key_points)
+        
+        # Extract key topics for more specific list
+        content_lower = module_content.lower()
+        key_topics = []
+        for sentence in key_points:
+            words = sentence.split()
+            for word in words:
+                if len(word) > 4 and word.lower() not in ['this', 'that', 'with', 'from', 'they', 'have', 'been', 'will', 'were', 'said', 'each', 'which', 'their', 'there', 'other', 'about', 'many', 'then', 'them', 'these', 'some', 'would', 'could', 'should']:
+                    key_topics.append(word.lower())
+        
+        unique_topics = list(set(key_topics))[:3]
+        
+        if unique_topics:
+            # Create topic-specific list items
+            list_items = []
+            for topic in unique_topics:
+                list_items.append(f"• Understand {topic} procedures and requirements")
+                list_items.append(f"• Follow {topic} safety protocols")
+                list_items.append(f"• Apply {topic} best practices")
+            
+            return '\n'.join(list_items)
+        else:
+            return '\n• ' + '\n• '.join(key_points)
     except:
         return "• Step 1: [First step]\n• Step 2: [Second step]\n• Step 3: [Third step]"
 
@@ -2387,17 +2607,57 @@ def generate_fallback_flashcard_content(module_content, training_context):
     try:
         sentences = module_content.split('.')
         key_concepts = [s.strip() for s in sentences if len(s.strip()) > 20][:3]
-        flashcards = []
-        for i, concept in enumerate(key_concepts, 1):
-            flashcards.append(f"Q{i}: What is the key concept about {concept[:30]}...?\nA{i}: {concept}")
-        return '\n\n'.join(flashcards)
+        
+        # Extract key topics for more specific flashcards
+        content_lower = module_content.lower()
+        key_topics = []
+        for sentence in key_concepts:
+            words = sentence.split()
+            for word in words:
+                if len(word) > 4 and word.lower() not in ['this', 'that', 'with', 'from', 'they', 'have', 'been', 'will', 'were', 'said', 'each', 'which', 'their', 'there', 'other', 'about', 'many', 'then', 'them', 'these', 'some', 'would', 'could', 'should']:
+                    key_topics.append(word.lower())
+        
+        unique_topics = list(set(key_topics))[:3]
+        
+        if unique_topics:
+            # Create topic-specific flashcards
+            flashcards = []
+            for i, topic in enumerate(unique_topics, 1):
+                flashcards.append(f"Q{i}: What are the key safety considerations for {topic}?\nA{i}: Follow proper procedures, use appropriate PPE, and maintain awareness of potential hazards.")
+                flashcards.append(f"Q{i+1}: What are the main procedures for {topic}?\nA{i+1}: Follow established protocols, document activities, and ensure quality standards are met.")
+            
+            return '\n\n'.join(flashcards)
+        else:
+            flashcards = []
+            for i, concept in enumerate(key_concepts, 1):
+                flashcards.append(f"Q{i}: What is the key concept about {concept[:30]}...?\nA{i}: {concept}")
+            return '\n\n'.join(flashcards)
     except:
         return "Q1: What is the main safety principle?\nA1: [Safety principle]\n\nQ2: What PPE is required?\nA2: [PPE requirements]"
 
 def generate_fallback_quiz_content(module_content, training_context):
     """Generate fallback quiz content"""
     try:
-        return "Q1: What is the primary focus of this module?\nA) [Option A]\nB) [Option B]\nC) [Option C]\nD) [Option D]\n\nQ2: Which of the following is most important?\nA) [Option A]\nB) [Option B]\nC) [Option C]\nD) [Option D]"
+        # Extract key topics for more specific quiz questions
+        content_lower = module_content.lower()
+        key_topics = []
+        sentences = module_content.split('.')
+        for sentence in sentences:
+            if len(sentence.strip()) > 20:
+                words = sentence.split()
+                for word in words:
+                    if len(word) > 4 and word.lower() not in ['this', 'that', 'with', 'from', 'they', 'have', 'been', 'will', 'were', 'said', 'each', 'which', 'their', 'there', 'other', 'about', 'many', 'then', 'them', 'these', 'some', 'would', 'could', 'should']:
+                        key_topics.append(word.lower())
+        
+        unique_topics = list(set(key_topics))[:2]
+        
+        if unique_topics:
+            topic1 = unique_topics[0] if len(unique_topics) > 0 else "process"
+            topic2 = unique_topics[1] if len(unique_topics) > 1 else "safety"
+            
+            return f"Q1: What is the primary focus of {topic1} in this module?\nA) Understanding procedures\nB) Following safety protocols\nC) Quality control measures\nD) All of the above\n\nQ2: Which of the following is most important for {topic2}?\nA) Speed of completion\nB) Safety and quality\nC) Cost efficiency\nD) Team coordination"
+        else:
+            return "Q1: What is the primary focus of this module?\nA) Understanding procedures\nB) Following safety protocols\nC) Quality control measures\nD) All of the above\n\nQ2: Which of the following is most important?\nA) Speed of completion\nB) Safety and quality\nC) Cost efficiency\nD) Team coordination"
     except:
         return "Q1: [Question about module content]\nA) [Option A]\nB) [Option B]\nC) [Option C]\nD) [Option D]"
 
@@ -2539,11 +2799,12 @@ def create_quick_pathway(context, extracted_file_contents, inventory):
         }]
     } 
 
-def gemini_generate_complete_pathway(context, extracted_file_contents, inventory, bypass_filtering=False, preserve_original_content=False):
+def gemini_generate_complete_pathway(context, extracted_file_contents, inventory, bypass_filtering=False, preserve_original_content=False, enhanced_content=False):
     """
     AI-powered pathway generation using Gemini API.
     Creates goal-aligned pathways based on primary training goals and file contents.
     Optimized for speed while maintaining quality.
+    Enhanced content mode generates more modules, pathways, and sections.
     """
     try:
         debug_print(f"🎯 **Goal-Aligned Pathway Generation (Optimized)**")
@@ -2563,8 +2824,18 @@ def gemini_generate_complete_pathway(context, extracted_file_contents, inventory
         debug_print(f"🏢 **Industry:** {industry}")
         
         if not primary_goals:
-            debug_print("⚠️ **FALLBACK REASON:** No primary goals specified, using quick pathway")
-            return create_quick_pathway(context, extracted_file_contents, inventory)
+            debug_print("⚠️ **FALLBACK REASON:** No primary goals specified, creating basic pathway")
+            # Create a basic pathway instead of quick pathway
+            basic_pathway = {
+                'pathways': [{
+                    'pathway_name': f"{training_type} Training Pathway",
+                    'sections': [{
+                        'title': 'Training Modules',
+                        'modules': []
+                    }]
+                }]
+            }
+            return basic_pathway
         
         # Fast initial content analysis to identify relevant files
         debug_print(f"🔍 **Fast content analysis for goal alignment**")
@@ -2593,8 +2864,18 @@ def gemini_generate_complete_pathway(context, extracted_file_contents, inventory
         debug_print(f"🎯 **Relevant files found:** {len(relevant_files)} out of {len(extracted_file_contents)}")
         
         if not relevant_files:
-            debug_print("⚠️ **FALLBACK REASON:** No relevant files found, using quick pathway")
-            return create_quick_pathway(context, extracted_file_contents, inventory)
+            debug_print("⚠️ **FALLBACK REASON:** No relevant files found, creating basic pathway")
+            # Create a basic pathway instead of quick pathway
+            basic_pathway = {
+                'pathways': [{
+                    'pathway_name': f"{training_type} Training Pathway",
+                    'sections': [{
+                        'title': 'Training Modules',
+                        'modules': []
+                    }]
+                }]
+            }
+            return basic_pathway
         
         debug_print(f"🎯 **Relevant files for AI processing:** {len(relevant_files)}")
         debug_print(f"📄 Relevant file names: {list(relevant_files.keys())}")
@@ -2602,54 +2883,88 @@ def gemini_generate_complete_pathway(context, extracted_file_contents, inventory
         # Use AI to thoroughly analyze and extract goal-aligned content
         goal_aligned_modules = []
         
-        # Process files in parallel for speed (limited to avoid timeouts)
-        max_concurrent_files = 3  # Limit concurrent processing
-        files_to_process = list(relevant_files.items())
+        # Get optimized configuration
+        config = get_parallel_config()
+        max_concurrent_files = config.get('concurrent_files', 3)  # Reduced for stability
+        ai_request_timeout = config.get('ai_request_timeout', 120)  # Increased timeout for AI operations
         
-        for i in range(0, len(files_to_process), max_concurrent_files):
-            batch = files_to_process[i:i + max_concurrent_files]
-            debug_print(f"🚀 **Processing batch {i//max_concurrent_files + 1}:** {len(batch)} files")
-            
-            for filename, content in batch:
-                debug_print(f"🔍 **AI analyzing {filename} thoroughly**")
-                
-                # Use AI to extract goal-aligned modules with thorough analysis
-                file_modules = extract_ai_goal_aligned_modules(
+        # Process files in parallel for maximum speed
+        files_to_process = list(relevant_files.items())
+        debug_print(f"🚀 **Processing {len(files_to_process)} files with {max_concurrent_files} concurrent workers**")
+        
+        # Use ThreadPoolExecutor for parallel processing
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_concurrent_files) as executor:
+            # Submit all file processing tasks
+            future_to_file = {
+                executor.submit(
+                    extract_ai_goal_aligned_modules,
                     filename, 
                     content, 
                     context, 
                     primary_goals,
                     bypass_filtering=bypass_filtering,
-                    preserve_original_content=preserve_original_content
-                )
-                
-                if file_modules:
-                    goal_aligned_modules.extend(file_modules)
-                    debug_print(f"✅ Extracted {len(file_modules)} AI-analyzed modules from {filename}")
-                else:
-                    debug_print(f"⚠️ No AI-aligned content found in {filename}")
+                    preserve_original_content=preserve_original_content,
+                    enhanced_content=enhanced_content
+                ): filename for filename, content in files_to_process
+            }
+            
+            # Collect results as they complete
+            for future in concurrent.futures.as_completed(future_to_file, timeout=ai_request_timeout * len(files_to_process)):
+                filename = future_to_file[future]
+                try:
+                    file_modules = future.result(timeout=ai_request_timeout)
+                    if file_modules:
+                        goal_aligned_modules.extend(file_modules)
+                        debug_print(f"✅ Extracted {len(file_modules)} AI-analyzed modules from {filename}")
+                    else:
+                        debug_print(f"⚠️ No AI-aligned content found in {filename}")
+                except concurrent.futures.TimeoutError:
+                    debug_print(f"⚠️ Timeout processing {filename}, skipping...")
+                except Exception as e:
+                    debug_print(f"⚠️ Error processing {filename}: {e}")
         
         debug_print(f"🎯 **Total AI-aligned modules:** {len(goal_aligned_modules)}")
         
         if not goal_aligned_modules:
-            debug_print("⚠️ **FALLBACK REASON:** No AI-aligned modules found, using quick pathway")
-            return create_quick_pathway(context, extracted_file_contents, inventory)
+            debug_print("⚠️ **FALLBACK REASON:** No AI-aligned modules found, creating basic pathway")
+            # Create a basic pathway instead of quick pathway
+            basic_pathway = {
+                'pathways': [{
+                    'pathway_name': f"{training_type} Training Pathway",
+                    'sections': [{
+                        'title': 'Training Modules',
+                        'modules': []
+                    }]
+                }]
+            }
+            return basic_pathway
         
         debug_print(f"🎯 **Proceeding with AI pathway creation for {len(goal_aligned_modules)} modules**")
         
         # Use AI to create goal-focused pathways
-        return create_ai_goal_pathways(goal_aligned_modules, context, primary_goals)
+        return create_ai_goal_pathways(goal_aligned_modules, context, primary_goals, enhanced_content)
         
     except Exception as e:
         debug_print(f"⚠️ **FALLBACK REASON:** AI pathway generation failed: {e}")
         import traceback
         debug_print(f"📝 Full error: {traceback.format_exc()}")
-        # Fallback to quick pathway
-        return create_quick_pathway(context, extracted_file_contents, inventory)
+        # Fallback to basic pathway instead of quick pathway
+        training_type = context.get('training_type', 'Training')
+        basic_pathway = {
+            'pathways': [{
+                'pathway_name': f"{training_type} Training Pathway",
+                'sections': [{
+                    'title': 'Training Modules',
+                    'modules': []
+                }]
+            }]
+        }
+        return basic_pathway
 
-def extract_ai_goal_aligned_modules(filename, content, context, primary_goals, bypass_filtering=False, preserve_original_content=False):
+def extract_ai_goal_aligned_modules(filename, content, context, primary_goals, bypass_filtering=False, preserve_original_content=False, enhanced_content=False):
     """
     Use AI to thoroughly analyze file content and extract goal-aligned modules
+    Enhanced content mode generates more comprehensive modules
     """
     try:
         if not model:
@@ -2661,8 +2976,8 @@ def extract_ai_goal_aligned_modules(filename, content, context, primary_goals, b
         debug_print(f"📄 Content length: {len(content)} characters")
         debug_print(f"🎯 Goals to align with: {primary_goals}")
         
-        # Prepare content for AI analysis (limit size for speed)
-        content_for_ai = content[:8000] if len(content) > 8000 else content
+        # Prepare content for AI analysis (optimized for speed)
+        content_for_ai = content[:6000] if len(content) > 6000 else content  # Reduced from 8000 for speed
         debug_print(f"📝 Content for AI analysis: {len(content_for_ai)} characters")
         
         training_type = context.get('training_type', 'Training')
@@ -2677,6 +2992,9 @@ def extract_ai_goal_aligned_modules(filename, content, context, primary_goals, b
         if is_meeting_transcript or has_meeting_patterns:
             debug_print(f"🎤 **Detected meeting transcript: {filename}**")
             # Use specialized prompt for meeting transcripts
+            module_count = "8-12" if enhanced_content else "6-10"  # Increased for more content
+            content_instruction = "be very comprehensive and detailed" if enhanced_content else "be comprehensive"
+            
             prompt = f"""
             Analyze this meeting transcript and extract training-relevant information.
             
@@ -2687,27 +3005,30 @@ def extract_ai_goal_aligned_modules(filename, content, context, primary_goals, b
             TRAINING TYPE: {training_type}
             TARGET AUDIENCE: {target_audience}
             INDUSTRY: {industry}
+            ENHANCED CONTENT MODE: {enhanced_content}
             
             REQUIREMENTS:
             1. This is a meeting transcript - extract training-relevant information from the conversation
             2. Look for specific procedures, processes, policies, or knowledge discussed
-            3. Extract 2-4 training modules that support the training goals
+            3. Extract {module_count} training modules that support the training goals
             4. Focus on actionable content, not just conversational elements
             5. Transform conversational language into professional training content
             6. Include specific procedures, processes, or knowledge mentioned
             7. Make modules suitable for {target_audience} in {industry}
             8. Focus on content that helps achieve: {primary_goals}
-            9. If no training-relevant content found, return empty array
+            9. Create detailed, comprehensive modules with substantial content
+            10. If enhanced content mode is enabled, create more detailed and comprehensive modules
+            11. If no training-relevant content found, return empty array
             
-            IMPORTANT: Return ONLY valid JSON array. Do not include any explanatory text.
+            IMPORTANT: Return ONLY valid JSON array. Do not include any explanatory text, markdown, or code blocks.
             
             Return as JSON array of modules:
             [
                 {{
                     "title": "Specific training topic from the meeting",
                     "description": "Clear description of what this module covers",
-                    "content": "Professional training content extracted from the meeting",
-                    "key_points": ["Point 1", "Point 2", "Point 3"]
+                    "content": "Professional training content extracted from the meeting ({content_instruction})",
+                    "key_points": ["Point 1", "Point 2", "Point 3", "Point 4"]
                 }}
             ]
             
@@ -2715,6 +3036,9 @@ def extract_ai_goal_aligned_modules(filename, content, context, primary_goals, b
             """
         else:
             # Standard prompt for other content types
+            module_count = "8-12" if enhanced_content else "6-10"  # Increased for more content
+            content_instruction = "be very comprehensive and detailed" if enhanced_content else "be comprehensive"
+            
             prompt = f"""
             Thoroughly analyze this file content and extract training modules that align with the specific training goals.
             
@@ -2725,25 +3049,28 @@ def extract_ai_goal_aligned_modules(filename, content, context, primary_goals, b
             TRAINING TYPE: {training_type}
             TARGET AUDIENCE: {target_audience}
             INDUSTRY: {industry}
+            ENHANCED CONTENT MODE: {enhanced_content}
             
             REQUIREMENTS:
             1. Read the content thoroughly and identify key parts relevant to the training goals
-            2. Extract 2-4 specific training modules that directly support the training goals
+            2. Extract {module_count} specific training modules that directly support the training goals
             3. Each module should focus on actionable training content
             4. Include specific procedures, processes, or knowledge from the file
             5. Make modules suitable for {target_audience} in {industry}
             6. Focus on content that helps achieve: {primary_goals}
-            7. If content doesn't align with goals, return empty array
+            7. Create detailed, comprehensive modules with substantial content
+            8. If enhanced content mode is enabled, create more detailed and comprehensive modules
+            9. If content doesn't align with goals, return empty array
             
-            IMPORTANT: Return ONLY valid JSON array. Do not include any explanatory text.
+            IMPORTANT: Return ONLY valid JSON array. Do not include any explanatory text, markdown, or code blocks.
             
             Return as JSON array of modules:
             [
                 {{
                     "title": "Specific module title based on content",
                     "description": "Clear description of what this module covers",
-                    "content": "Extracted and structured training content from the file",
-                    "key_points": ["Point 1", "Point 2", "Point 3"]
+                    "content": "Extracted and structured training content from the file ({content_instruction})",
+                    "key_points": ["Point 1", "Point 2", "Point 3", "Point 4"]
                 }}
             ]
             
@@ -2759,6 +3086,15 @@ def extract_ai_goal_aligned_modules(filename, content, context, primary_goals, b
         # Extract JSON from response with improved handling
         modules_data = extract_json_from_ai_response(raw)
         
+        # Cache the response for future use (only if in main thread)
+        if threading.current_thread() == threading.main_thread():
+            try:
+                if 'ai_cache' not in st.session_state:
+                    st.session_state.ai_cache = {}
+                st.session_state.ai_cache[f"{filename}_{hash(content_for_ai)}_{enhanced_content}"] = modules_data
+            except Exception:
+                pass  # Ignore caching errors
+        
         if modules_data and isinstance(modules_data, list):
             debug_print(f"✅ AI returned {len(modules_data)} modules for {filename}")
             modules = []
@@ -2772,23 +3108,22 @@ def extract_ai_goal_aligned_modules(filename, content, context, primary_goals, b
                     debug_print(f"📄 Module {i+1}: '{title}' - {len(content)} chars")
                     
                     if content and len(content.strip()) > 50:
-                        # Add debugging source information to content
-                        debug_source = f"\n\n--- DEBUG SOURCE ---\nContent extracted from: {filename}\nModule created by: AI analysis\nContent length: {len(content)} characters\n--- END DEBUG SOURCE ---\n\n"
-                        content_with_debug = debug_source + content
+                        # Clean and professionalize the content
+                        professional_content = make_content_professional(content)
                         
-                        # Generate content types for this module
-                        content_types = generate_content_types_with_ai(content, context)
+                        # Generate content types for this module (optimized for speed)
+                        content_types = generate_content_types_with_ai_fast(professional_content, context)
                         
                         modules.append({
                             'title': title,
                             'description': description,
-                            'content': content_with_debug,
+                            'content': professional_content,
                             'source': filename,
                             'key_points': key_points,
                             'relevance_score': 0.9,  # High relevance since AI filtered
                             'content_types': content_types
                         })
-                        debug_print(f"✅ Module {i+1} added successfully with debug source info and {len(content_types)} content types")
+                        debug_print(f"✅ Module {i+1} added successfully with {len(content_types)} content types")
                     else:
                         debug_print(f"⚠️ Module {i+1} content too short ({len(content)} chars)")
             
@@ -2849,7 +3184,7 @@ def extract_meeting_transcript_modules(filename, content, context, primary_goals
         
         if not meaningful_sentences:
             debug_print(f"⚠️ No meaningful content found in meeting transcript")
-        return []
+            return []
 
         # Group sentences into modules
         modules = []
@@ -2868,19 +3203,18 @@ def extract_meeting_transcript_modules(filename, content, context, primary_goals
                 title = re.sub(r'^[A-Za-z]+:\s*', '', title)  # Remove speaker prefixes
                 title = title.strip()
                 
-                # Add debugging source information to content
-                debug_source = f"\n\n--- DEBUG SOURCE ---\nContent extracted from: {filename}\nModule created by: Fallback extraction\nContent length: {len(module_content)} characters\nExtraction method: Meeting transcript fallback\n--- END DEBUG SOURCE ---\n\n"
-                module_content_with_debug = debug_source + module_content
-                
                 # Generate content types for this module
                 content_types = generate_fallback_content_types(module_content, context)
+                
+                # Clean and professionalize the content
+                professional_content = make_content_professional(module_content)
                 
                 modules.append({
                     'title': f'Module {len(modules)+1}: {title}',
                     'description': f'Training content extracted from {filename}',
-                    'content': module_content_with_debug,
+                    'content': professional_content,
                     'source': filename,
-                    'key_points': extract_key_points_from_content(module_content, context),
+                    'key_points': extract_key_points_from_content(professional_content, context),
                     'relevance_score': 0.7,  # Medium relevance since it's fallback
                     'content_types': content_types
                 })
@@ -2892,9 +3226,10 @@ def extract_meeting_transcript_modules(filename, content, context, primary_goals
         debug_print(f"⚠️ Meeting transcript fallback extraction failed: {e}")
         return []
 
-def create_ai_goal_pathways(modules, context, primary_goals):
+def create_ai_goal_pathways(modules, context, primary_goals, enhanced_content=False):
     """
     Use AI to create goal-focused pathways from modules with semantic search and RAG
+    Enhanced content mode generates more comprehensive pathways
     """
     try:
         if not model:
@@ -2917,21 +3252,25 @@ def create_ai_goal_pathways(modules, context, primary_goals):
         enhanced_context = retrieve_related_context(modules, primary_goals, semantic_keywords)
         debug_print(f"📚 **Enhanced context retrieved:** {len(enhanced_context)} related concepts")
         
-        # Prepare module summaries with semantic relevance scores
+        # Prepare module summaries with semantic relevance scores (optimized for speed)
         module_summaries = []
-        for i, module in enumerate(modules[:10]):  # Limit for speed
+        max_modules_for_analysis = 15 if enhanced_content else 10  # Limit for speed
+        for i, module in enumerate(modules[:max_modules_for_analysis]):
             semantic_score = calculate_semantic_relevance(module, primary_goals, semantic_keywords)
             module_summaries.append({
                 'index': i + 1,
                 'title': module.get('title', f'Module {i+1}'),
                 'description': module.get('description', ''),
-                'content_preview': module.get('content', '')[:200] + '...',
+                'content_preview': module.get('content', '')[:150] + '...',  # Reduced preview length
                 'semantic_relevance': semantic_score
             })
         
         debug_print(f"📋 Module summaries prepared with semantic relevance: {len(module_summaries)} modules")
         
-        # Create enhanced prompt with semantic context
+        # Create enhanced prompt with semantic context (optimized for speed)
+        pathway_count = "4-6" if enhanced_content else "3-5"  # Increased for more pathways
+        section_count = "5-7" if enhanced_content else "4-6"  # Increased for more sections
+        
         enhanced_prompt = f"""
         Create goal-aligned training pathways from these modules using semantic understanding.
         
@@ -2939,24 +3278,26 @@ def create_ai_goal_pathways(modules, context, primary_goals):
         TRAINING TYPE: {training_type}
         TARGET AUDIENCE: {target_audience}
         INDUSTRY: {industry}
+        ENHANCED CONTENT MODE: {enhanced_content}
         
         SEMANTIC CONTEXT:
         - Primary Goals: {primary_goals}
-        - Related Concepts: {', '.join(semantic_keywords)}
-        - Enhanced Context: {enhanced_context}
+        - Related Concepts: {', '.join(semantic_keywords[:10])}  # Limited for speed
+        - Enhanced Context: {enhanced_context[:500]}  # Limited for speed
         
         MODULES WITH SEMANTIC RELEVANCE: {module_summaries}
         
         REQUIREMENTS:
         1. Use semantic understanding to group modules by related concepts, not just exact keyword matches
-        2. Create 1-3 pathways that support the training goals through related topics
+        2. Create {pathway_count} pathways that support the training goals through related topics
         3. Group modules logically based on semantic similarity and training progression
         4. Each pathway should have a clear focus that supports the primary goals
         5. Create meaningful section titles that reflect the training objectives
         6. Include descriptions that reference the specific training goals and related concepts
         7. Make pathways suitable for {target_audience} in {industry}
         8. Consider both direct relevance and related concepts that support the goals
-        9. Return ONLY valid JSON - no explanatory text
+        9. Create {section_count} sections per pathway for comprehensive coverage
+        10. Return ONLY valid JSON - no explanatory text
         
         SEMANTIC GROUPING GUIDELINES:
         - Look for modules that cover related aspects of the same topic
@@ -2964,6 +3305,9 @@ def create_ai_goal_pathways(modules, context, primary_goals):
         - Group advanced applications together
         - Consider learning progression from basic to advanced
         - Include modules that support the goals indirectly through related skills
+        - Create multiple pathways to cover different aspects of the training goals
+        - Each pathway should have {section_count} sections for comprehensive coverage
+        - If enhanced content mode is enabled, create more detailed and comprehensive pathways
         
         Return as JSON:
         {{
@@ -2983,7 +3327,7 @@ def create_ai_goal_pathways(modules, context, primary_goals):
         }}
         
         Focus on creating pathways that semantically support: {primary_goals}
-        IMPORTANT: Return ONLY valid JSON array. Do not include any explanatory text.
+        IMPORTANT: Return ONLY valid JSON array. Do not include any explanatory text, markdown, or code blocks.
         """
         
         debug_print(f"🤖 Sending enhanced AI pathway creation request with semantic search...")
@@ -3232,6 +3576,7 @@ def create_robust_fallback_pathways(modules, context, primary_goals):
 def extract_semantic_keywords(primary_goals, context):
     """
     Extract semantic keywords that are related to the primary goals but not exact matches
+    Optimized for speed with reduced AI calls
     """
     try:
         if not model:
@@ -3244,8 +3589,9 @@ def extract_semantic_keywords(primary_goals, context):
         target_audience = context.get('target_audience', 'employees')
         industry = context.get('industry', 'general')
         
+        # Use a shorter, more focused prompt for speed
         prompt = f"""
-        Extract semantic keywords that are related to this training goal but not exact matches.
+        Extract 8-10 semantic keywords related to this training goal.
         
         PRIMARY GOAL: {primary_goals}
         TRAINING TYPE: {training_type}
@@ -3255,15 +3601,10 @@ def extract_semantic_keywords(primary_goals, context):
         REQUIREMENTS:
         1. Find related concepts, skills, and knowledge areas that support the primary goal
         2. Include broader industry terms, related processes, and supporting skills
-        3. Consider prerequisite knowledge and advanced applications
-        4. Include safety, quality, and compliance aspects if relevant
-        5. Focus on terms that would help create comprehensive training pathways
-        6. Return only the keywords, one per line, without explanations
+        3. Focus on terms that would help create comprehensive training pathways
+        4. Return only the keywords, one per line, without explanations
         
-        Examples:
-        - If goal is "learn bridge fabrication", include: welding, steel, construction, assembly, safety, quality control, engineering drawings, measurements, tools, equipment, materials, processes, standards, regulations
-        
-        Return 10-15 semantic keywords that support the training goal.
+        Return 8-10 semantic keywords that support the training goal.
         """
         
         response = model.generate_content(prompt)
@@ -3278,7 +3619,7 @@ def extract_semantic_keywords(primary_goals, context):
                     cleaned_keywords.append(keyword)
             
             debug_print(f"✅ Extracted {len(cleaned_keywords)} semantic keywords")
-            return cleaned_keywords[:15]  # Limit to 15 keywords
+            return cleaned_keywords[:10]  # Limit to 10 keywords for speed
         
         return []
         
@@ -3399,3 +3740,101 @@ def calculate_semantic_relevance(module, primary_goals, semantic_keywords):
     except Exception as e:
         debug_print(f"⚠️ Semantic relevance calculation failed: {e}")
         return 0.5  # Default medium relevance
+
+def generate_content_types_with_ai_fast(module_content, training_context):
+    """
+    Fast content type generation with reduced AI calls for speed
+    """
+    try:
+        if not model:
+            return generate_fallback_content_types(module_content, training_context)
+        
+        # Use AI to generate unique content types based on actual module content
+        training_type = training_context.get('training_type', 'Training')
+        target_audience = training_context.get('target_audience', 'employees')
+        industry = training_context.get('industry', 'general')
+        primary_goals = training_context.get('primary_goals', '')
+        
+        # Create a focused prompt for content type generation
+        prompt = f"""
+        Analyze this training module content and generate 2-3 unique content types that would enhance learning.
+        
+        MODULE CONTENT:
+        {module_content[:1000]}
+        
+        TRAINING CONTEXT:
+        - Type: {training_type}
+        - Target Audience: {target_audience}
+        - Industry: {industry}
+        - Primary Goals: {primary_goals}
+        
+        REQUIREMENTS:
+        1. Generate 2-3 content types that are SPECIFIC to this module's content
+        2. Each content type should have unique, relevant content based on the module
+        3. Focus on the actual topics and concepts in the module
+        4. Make content suitable for {target_audience} in {industry}
+        5. Align with training goals: {primary_goals}
+        6. Generate REAL content for each type, not generic placeholders
+        
+        CONTENT TYPES TO CHOOSE FROM:
+        - text: Detailed explanatory text
+        - list: Step-by-step procedures or key points
+        - flashcards: Important concepts for memorization
+        - knowledge_check: Quiz questions to test understanding
+        - video: Video demonstration descriptions
+        - file: Downloadable templates or resources
+        - assignment: Practical exercises or tasks
+        
+        Return as JSON array:
+        [
+            {{
+                "type": "content_type_name",
+                "title": "Specific title based on module content",
+                "description": "How this content type enhances learning",
+                "content": "ACTUAL GENERATED CONTENT specific to this module"
+            }}
+        ]
+        
+        IMPORTANT: Return ONLY valid JSON array. Do not include any explanatory text, markdown, or code blocks.
+        """
+        
+        response = model.generate_content(prompt)
+        raw = response.text.strip()
+        
+        # Extract JSON from response
+        content_types_data = extract_json_from_ai_response(raw)
+        
+        if content_types_data and isinstance(content_types_data, list):
+            # Validate and clean content types
+            valid_content_types = []
+            for content_type in content_types_data:
+                if isinstance(content_type, dict):
+                    content_type_name = content_type.get('type', '').lower()
+                    if content_type_name in ['text', 'list', 'flashcards', 'knowledge_check', 'video', 'file', 'assignment']:
+                        valid_content_types.append({
+                            'type': content_type_name,
+                            'title': content_type.get('title', f'{content_type_name.title()} Content'),
+                            'description': content_type.get('description', ''),
+                            'content': content_type.get('content', f'Generated content for {content_type_name}')
+                        })
+            
+            if valid_content_types:
+                debug_print(f"✅ Generated {len(valid_content_types)} unique content types for module")
+                return valid_content_types[:3]  # Limit to 3 content types
+        
+        # Fallback to basic content type generation
+        debug_print(f"⚠️ AI content type generation failed, using fallback")
+        return generate_fallback_content_types(module_content, training_context)
+        
+    except Exception as e:
+        debug_print(f"⚠️ Fast content type generation failed: {e}")
+        return generate_fallback_content_types(module_content, training_context)
+        
+    except Exception as e:
+        debug_print(f"⚠️ Fast content type generation failed: {e}")
+        return [{
+            'type': 'text',
+            'title': 'Module Content',
+            'description': 'Explanatory text content',
+            'content': 'Provide detailed explanations of module content'
+        }]

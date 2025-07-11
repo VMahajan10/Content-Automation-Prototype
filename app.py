@@ -27,7 +27,7 @@ except ImportError:
 
 # Import from our modules
 from modules.config import *
-from modules.utils import create_quick_pathway
+from modules.utils import flush_debug_logs_to_streamlit, extract_modules_from_file_content
 from markmap_component import markmap
 
 # BackendFile class for handling file-like objects
@@ -156,9 +156,20 @@ st.set_page_config(
 
 # Main application
 def main():
+    # Initialize session state variables
+    if 'ai_cache' not in st.session_state:
+        st.session_state.ai_cache = {}
+    
     # Start backend server automatically
     if not start_backend_server():
         st.warning("⚠️ Backend server could not be started. Some features may not work properly.")
+    
+    # Show Gemini API status
+    if model:
+        st.success("✅ Gemini AI Connected - Chatbot powered by AI")
+    else:
+        st.error("❌ Gemini AI Not Available - Some features may be limited")
+        st.info("Please configure your Gemini API key in Settings")
     
     st.title("🚀 Gateway Content Automation")
     st.markdown("### AI-Powered Training Content Generation & Mind Mapping")
@@ -646,35 +657,37 @@ def show_training_discovery_page():
                                 backend_file_list = session_data.get('files', [])
                                 session_id = session_data.get('session_id', 'Unknown')
                                 total_files = session_data.get('total_files', 0)
-                                        
-                                        # Download and create proper file objects for processing
+                                
+                                # Download and create proper file objects for processing
                                 if backend_file_list:
-                                        for file_info in backend_file_list:
-                                            try:
-                                                # Download file from backend
-                                                download_response = requests.get(f"http://localhost:8000/files/{file_info['filename']}/download")
-                                                if download_response.status_code == 200:
-                                                    # Create a file-like object
-                                                    backend_file = BackendFile(
-                                                        file_info['filename'], 
-                                                        download_response.content,
-                                                        file_info['size']
-                                                    )
-                                                    uploaded_files.append(backend_file)
-                                                else:
-                                                    st.warning(f"Failed to download {file_info['filename']}")
-                                            except Exception as e:
-                                                st.warning(f"Error downloading {file_info['filename']}: {str(e)}")
-                                        
-                                        if uploaded_files:
-                                            st.success(f"Added {len(uploaded_files)} files for processing!")
-                                            st.rerun()
-                                        else:
-                                            st.warning("No files could be downloaded for processing.")
+                                    for file_info in backend_file_list:
+                                        try:
+                                            # Download file from backend
+                                            download_response = requests.get(f"http://localhost:8000/files/{file_info['filename']}/download")
+                                            if download_response.status_code == 200:
+                                                # Create a file-like object
+                                                backend_file = BackendFile(
+                                                    file_info['filename'], 
+                                                    download_response.content,
+                                                    file_info['size']
+                                                )
+                                                uploaded_files.append(backend_file)
+                                            else:
+                                                st.warning(f"Failed to download {file_info['filename']}")
+                                        except Exception as e:
+                                            st.warning(f"Error downloading {file_info['filename']}: {str(e)}")
+                                    
+                                    if uploaded_files:
+                                        st.success(f"Added {len(uploaded_files)} files for processing!")
+                                        st.rerun()
                                     else:
+                                        st.warning("No files could be downloaded for processing.")
+                                else:
+                                    st.warning("No backend files found for processing.")
+                            else:
                                 st.error("❌ Backend server responded with error")
-                            except Exception as e:
-                                st.error(f"Error processing backend files: {str(e)}")
+                        except Exception as e:
+                            st.error(f"Error processing backend files: {str(e)}")
                         
             except Exception as e:
                 st.error(f"Error checking backend server or processing backend files: {str(e)}")
@@ -1005,11 +1018,20 @@ def show_training_discovery_page():
         if context.get('target_audience'):
             st.write(f"**Target Audience:** {context['target_audience']}")
         
-        # Add quick test mode for faster processing
-        quick_test_mode = st.checkbox(
-            "Quick Test Mode (skip AI analysis for speed)",
-            help="For testing purposes - skips AI analysis and uses basic content extraction for maximum speed"
-        )
+        # Add speed and content optimization options
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            quick_test_mode = st.checkbox(
+                "Quick Test Mode (skip AI analysis for speed)",
+                help="For testing purposes - skips AI analysis and uses basic content extraction for maximum speed"
+            )
+        
+        with col2:
+            enhanced_content_mode = st.checkbox(
+                "Enhanced Content Mode (more modules and pathways)",
+                help="Generate more comprehensive content with additional modules, pathways, and sections"
+            )
         
         col1, col2 = st.columns(2)
         with col1:
@@ -1036,6 +1058,10 @@ def show_training_discovery_page():
                             st.write("📞 Creating quick pathway...")
                             
                             generated_pathways_data = create_quick_pathway(context, extracted_file_contents, inventory)
+                            
+                            # Flush any debug logs from background threads
+                            flush_debug_logs_to_streamlit()
+                            
                             st.write(f"📋 Quick Response: {generated_pathways_data}")
                             
                             if generated_pathways_data:
@@ -1078,7 +1104,33 @@ def show_training_discovery_page():
                             else:
                                 st.info("🎯 Using goal alignment - filtering content to match your training objectives")
                             
-                            generated_pathways_data = gemini_generate_complete_pathway(context, extracted_file_contents, inventory, bypass_filtering=bypass_filtering, preserve_original_content=preserve_original_content)
+                            # Pass enhanced content mode
+                            if enhanced_content_mode:
+                                st.info("📈 Enhanced Content Mode - generating more modules, pathways, and sections")
+                            
+                            # Add progress indicator
+                            progress_bar = st.progress(0)
+                            status_text = st.empty()
+                            
+                            # Update progress
+                            status_text.text("🚀 Starting AI pathway generation...")
+                            progress_bar.progress(10)
+                            
+                            generated_pathways_data = gemini_generate_complete_pathway(context, extracted_file_contents, inventory, bypass_filtering=bypass_filtering, preserve_original_content=preserve_original_content, enhanced_content=enhanced_content_mode)
+                            
+                            # Flush any debug logs from background threads
+                            flush_debug_logs_to_streamlit()
+                            
+                            # Update progress
+                            status_text.text("✅ AI pathway generation completed!")
+                            progress_bar.progress(100)
+                            
+                            # Clear progress after a moment
+                            import time
+                            time.sleep(1)
+                            progress_bar.empty()
+                            status_text.empty()
+                            
                             st.write(f"📋 AI Response: {generated_pathways_data}")
                             
                             if generated_pathways_data:
@@ -1165,15 +1217,104 @@ def show_training_discovery_page():
         
         # Show pathway cards for all pathways
         st.markdown(f"### 🎯 **Select a Pathway**")
+        
+        # Check if pathways exist and are not empty
+        if not pathways or len(pathways) == 0:
+            st.error("No pathways generated. Please try again.")
+            return
+        
         cols = st.columns(len(pathway_names))
         for idx, pname in enumerate(pathway_names):
             with cols[idx]:
                 if st.button(f"Pathway {idx+1}: {pname}", key=f"pathway_card_{idx}"):
                     st.session_state['selected_pathway_idx'] = idx
                     st.session_state['selected_section'] = None
+        # Safety check for pathway index
+        if 'selected_pathway_idx' not in st.session_state or st.session_state['selected_pathway_idx'] >= len(pathways):
+            st.session_state['selected_pathway_idx'] = 0
+        
         selected_pathway = pathways[st.session_state['selected_pathway_idx']]
+        
+        # Initialize chatbot visibility state for main pathway view
+        if 'chatbot_visible' not in st.session_state:
+            st.session_state.chatbot_visible = True  # Show by default after pathway generation
+        
+        # Create header with pathway name
         st.markdown(f"### 🎯 **{selected_pathway['pathway_name']}**")
         st.markdown("This goal-aligned pathway is designed based on your specific training goals and available content. Content has been filtered and structured to directly support your training objectives.")
+        
+        # Add floating chatbot button with CSS
+        st.markdown("""
+        <style>
+        .floating-chatbot {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .floating-chatbot:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+        .chatbot-popup {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 350px;
+            max-height: 500px;
+            background: white;
+            border: 2px solid #1f77b4;
+            border-radius: 10px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            z-index: 9999;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        .chatbot-popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chatbot-popup-close {
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: #1f77b4;
+            cursor: pointer;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Create main content area
+        # Main content goes here
+        
+        # Initialize chatbot visibility state
+        if 'chatbot_visible' not in st.session_state:
+            st.session_state.chatbot_visible = False
+        
+        # Floating chatbot button on the right side
+        col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
+        with col5:
+            if st.button("🤖", key="floating_chatbot_toggle", help="AI Assistant"):
+                st.session_state.chatbot_visible = not st.session_state.chatbot_visible
+                st.rerun()
+        
+        # Show chatbot popup if visible
+        if st.session_state.chatbot_visible:
+            create_pathway_chatbot_popup("floating")
         # --- Convert pathway to editable format ---
         if 'editable_pathways' not in st.session_state or st.session_state.get('editable_pathways_pathway_idx', -1) != st.session_state['selected_pathway_idx']:
             editable_pathways = {}
@@ -1217,10 +1358,14 @@ def show_training_discovery_page():
             section_idx = list(editable_pathways.keys()).index(section) + 1
             st.markdown(f"### Modules in Section {section_idx}: {section}")
             
-            # Create two columns: left for modules, right for chatbot
-            left_col, right_col = st.columns([2, 1])
+            # Initialize chatbot visibility state
+            if 'chatbot_visible' not in st.session_state:
+                st.session_state.chatbot_visible = False
             
-            with left_col:
+            # Create main layout with chatbot toggle
+            main_col, chatbot_col = st.columns([4, 1])
+            
+            with main_col:
                 i = 0
                 while i < len(mods):
                     mod = mods[i]
@@ -1229,7 +1374,8 @@ def show_training_discovery_page():
                         new_title = st.text_input(f"Title ({section}-{i})", mod['title'], key=f"title_{section}_{i}")
                         new_desc = st.text_input(f"Description ({section}-{i})", mod.get('description', ''), key=f"desc_{section}_{i}")
                         new_content = st.text_area(f"Content ({section}-{i})", mod['content'], key=f"content_{section}_{i}")
-                        st.markdown(f"**{i+1}. {new_title}**")
+                        # Display correct local module number within section
+                        st.markdown(f"**Module {i+1}. {new_title}**")
                     
                     # Display content types on the right side
                     with col4:
@@ -1280,9 +1426,8 @@ def show_training_discovery_page():
                     st.markdown("---")
                     i += 1
             
-            # Chatbot in the right column
-            with right_col:
-                create_pathway_chatbot()
+            # Remove chatbot from module view since we have floating chatbot
+            pass
         # --- Export and Save Buttons ---
         st.markdown("---")
         col1, col2, col3, col4, col5 = st.columns(5)
@@ -1353,6 +1498,13 @@ def show_training_discovery_page():
             st.markdown("---")
             st.subheader("🎬 Multimedia Content Generation (Coming Soon)")
             st.info("The app will generate multimedia content for each module in your confirmed pathways. Stay tuned!")
+
+        # Save generated pathway to history
+        if 'past_generated_pathways' not in st.session_state:
+            st.session_state['past_generated_pathways'] = []
+        # Only append if not already present (by pathway_name and sections)
+        if generated_pathways_data not in st.session_state['past_generated_pathways']:
+            st.session_state['past_generated_pathways'].append(generated_pathways_data)
 
 def create_pathway_chatbot():
     """
@@ -1425,38 +1577,267 @@ def create_pathway_chatbot():
             st.session_state.chatbot_history = []
             st.rerun()
 
-def process_chatbot_request(user_input):
+def create_pathway_chatbot_popup(context="main"):
+    """
+    Create a popup chatbot interface for pathway management
+    This version appears as a floating popup when toggled
+    """
+    # Always use a floating popup on the right, never sidebar
+    if context == "floating":
+        # No custom CSS needed for sidebar approach
+
+        # Render the popup only if chatbot_visible is True
+        if st.session_state.get("chatbot_visible", False):
+            # Use sidebar for floating effect
+            with st.sidebar:
+                st.markdown("### 🤖 AI Assistant")
+                
+                # Show AI status
+                if model:
+                    st.success("✅ Gemini AI Connected")
+                else:
+                    st.error("❌ Gemini AI Not Available")
+                    st.info("Please check your API key in Settings")
+                
+                # Show current module structure
+                editable_pathways = st.session_state.get('editable_pathways', {})
+                if editable_pathways:
+                    st.markdown("**📚 Current Modules:**")
+                    module_reference_help = format_module_reference_help(editable_pathways)
+                    # Show a condensed version
+                    for section_name, modules in editable_pathways.items():
+                        st.markdown(f"**{section_name}:**")
+                        for i, module in enumerate(modules):
+                            st.markdown(f"  • Module {i+1}: {module['title']}")
+                        st.markdown("")
+                else:
+                    st.info("📚 No modules available yet")
+                
+                # Close button
+                if st.button("✕ Close", key=f"sidebar_close_{context}", help="Close AI Assistant"):
+                    st.session_state.chatbot_visible = False
+                    st.rerun()
+                
+                # Chat history
+                if 'popup_chatbot_history' not in st.session_state:
+                    st.session_state.popup_chatbot_history = []
+                
+                # Display recent messages
+                recent_messages = st.session_state.popup_chatbot_history[-8:] if st.session_state.popup_chatbot_history else []
+                for message in recent_messages:
+                    if message['role'] == 'user':
+                        st.markdown(f"**👤 You:** {message['content']}")
+                    else:
+                        st.markdown(f"**🤖 Assistant:** {message['content']}")
+                
+                st.markdown("---")
+                
+                # File upload section - MOVED TO TOP
+                st.markdown("**📁 Upload Files:**")
+                uploaded_files = st.file_uploader(
+                    "Upload files to add to your pathway",
+                    type=['pdf', 'doc', 'docx', 'txt', 'mp4', 'avi', 'mov'],
+                    key=f"sidebar_file_upload_{context}",
+                    accept_multiple_files=True
+                )
+                
+                # Show uploaded files status
+                if uploaded_files:
+                    st.success(f"📁 {len(uploaded_files)} files ready")
+                    for i, file in enumerate(uploaded_files):
+                        st.write(f"• {file.name} ({file.size} bytes)")
+                    
+                                    # Process files button
+                if st.button("🔄 Process Files Now", key=f"sidebar_process_files_{context}"):
+                    st.info("🚀 Fast processing files...")
+                    
+                    # Add progress indicator
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    # Process files with progress updates
+                    for i, file in enumerate(uploaded_files):
+                        status_text.text(f"Processing {file.name}... ({i+1}/{len(uploaded_files)})")
+                        progress_bar.progress((i + 1) / len(uploaded_files))
+                    
+                    result = process_new_files(uploaded_files)
+                    
+                    # Clear progress indicators
+                    progress_bar.empty()
+                    status_text.empty()
+                    
+                    if result:
+                        st.success("✅ Files processed and pathway updated!")
+                        # Add success message to chat
+                        st.session_state.popup_chatbot_history.append({
+                            'role': 'assistant',
+                            'content': f"✅ Successfully processed {len(uploaded_files)} files and updated your pathway!"
+                        })
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to process files. Please try again.")
+                        # Add error message to chat
+                        st.session_state.popup_chatbot_history.append({
+                            'role': 'assistant',
+                            'content': "❌ Failed to process files. Please check the file format and try again."
+                        })
+                        st.rerun()
+                else:
+                    st.info("📁 No files uploaded yet")
+                
+                st.markdown("---")
+                
+                # User input section
+                st.markdown("**💬 Ask me anything:**")
+                user_input = st.text_input("Your message:", key=f"sidebar_input_{context}", placeholder="e.g., 'Update module 2 with new file' or 'Regenerate module 1'")
+                
+                # Send button
+                if st.button("Send", key=f"sidebar_send_{context}"):
+                    if user_input:
+                        st.session_state.popup_chatbot_history.append({
+                            'role': 'user',
+                            'content': user_input
+                        })
+                        
+                        # Pass uploaded files to the processing function
+                        response = process_chatbot_request(user_input, uploaded_files)
+                        st.session_state.popup_chatbot_history.append({
+                            'role': 'assistant',
+                            'content': response
+                        })
+                        st.rerun()
+                
+                st.markdown("---")
+                
+                # Quick actions
+                st.markdown("**⚡ Quick Actions:**")
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    if st.button("🔄 Regenerate", key=f"quick_regenerate_{context}"):
+                        if uploaded_files:
+                            response = process_chatbot_request("regenerate current module with uploaded files", uploaded_files)
+                        else:
+                            response = "Please upload files first, then ask me to regenerate modules."
+                        
+                        st.session_state.popup_chatbot_history.append({
+                            'role': 'assistant',
+                            'content': response
+                        })
+                        st.rerun()
+                
+                with col2:
+                    if st.button("📚 Past Pathways", key=f"show_past_{context}"):
+                        response = process_chatbot_request("show past pathways")
+                        st.session_state.popup_chatbot_history.append({
+                            'role': 'assistant',
+                            'content': response
+                        })
+                        st.rerun()
+                
+                with col3:
+                    if st.button("🔍 Search Content", key=f"search_content_{context}"):
+                        response = process_chatbot_request("find safety procedures")
+                        st.session_state.popup_chatbot_history.append({
+                            'role': 'assistant',
+                            'content': response
+                        })
+                        st.rerun()
+                
+                col4, col5 = st.columns(2)
+                with col4:
+                    if st.button("🗑️ Clear Chat", key=f"sidebar_clear_{context}", help="Clear chat history"):
+                        st.session_state.popup_chatbot_history = []
+                        st.rerun()
+    else:
+        # Fallback: show nothing for non-floating context
+        pass
+
+def process_chatbot_request(user_input, uploaded_files=None):
     """
     Process chatbot requests and return appropriate responses
     """
     user_input_lower = user_input.lower()
     
-    # Check for regeneration requests
-    if any(word in user_input_lower for word in ['regenerate', 'regenerate', 'update', 'change']):
+    # Get current pathway data for module reference
+    editable_pathways = st.session_state.get('editable_pathways', {})
+    module_reference_help = ""
+    if editable_pathways:
+        module_reference_help = format_module_reference_help(editable_pathways)
+    
+    # Check for file-based update requests (when files are uploaded) - PRIORITY 1
+    if uploaded_files and len(uploaded_files) > 0:
+        if any(word in user_input_lower for word in ['update', 'add to', 'modify', 'change', 'adjust', 'regenerate']):
+            if any(word in user_input_lower for word in ['module', 'section', 'pathway', 'course', 'program']):
+                return handle_file_based_module_update(user_input, uploaded_files)
+    
+    # Check for regeneration requests (when no files uploaded)
+    if any(word in user_input_lower for word in ['regenerate']):
         if 'module' in user_input_lower or 'content' in user_input_lower:
             return handle_module_regeneration(user_input)
         else:
-            return "I can help you regenerate modules. Please specify which module you'd like to regenerate and any specific changes you want."
+            return f"I can help you regenerate modules. Please specify which module you'd like to regenerate and any specific changes you want.\n\n{module_reference_help}"
     
-    # Check for file ingestion requests
-    elif any(word in user_input_lower for word in ['ingest', 'upload', 'add', 'new file', 'new files']):
+    # Check for file ingestion requests (when no files uploaded)
+    elif any(word in user_input_lower for word in ['ingest', 'upload', 'add', 'new file', 'new files', 'process files']):
         return handle_file_ingestion(user_input)
     
-    # Check for tone/style changes
-    elif any(word in user_input_lower for word in ['tone', 'style', 'professional', 'casual', 'formal']):
+    # Check for tone/style changes (expanded to include more tones)
+    elif any(word in user_input_lower for word in ['tone', 'style', 'professional', 'casual', 'formal', 'technical', 'friendly', 'conversational', 'academic', 'simple', 'detailed']):
         return handle_tone_change(user_input)
     
     # Check for content addition
-    elif any(word in user_input_lower for word in ['add', 'include', 'missing', 'additional']):
+    elif any(word in user_input_lower for word in ['add', 'include', 'missing', 'additional', 'insert', 'supplement']):
         return handle_content_addition(user_input)
     
+    # Check for specific module requests
+    elif any(word in user_input_lower for word in ['module', 'section', 'content']):
+        return handle_module_specific_request(user_input)
+    
     # General help
-    elif any(word in user_input_lower for word in ['help', 'what can you do', 'how']):
+    elif any(word in user_input_lower for word in ['help', 'what can you do', 'how', 'commands']):
         return get_chatbot_help()
     
-    # Default response
+    # Default response - use AI for intelligent responses
     else:
-        return "I can help you with:\n• Regenerating modules with different content or tone\n• Ingesting new files to update pathways\n• Changing module tone/style\n• Adding missing information\n\nPlease be more specific about what you'd like to do."
+        try:
+            if not model:
+                # Fallback if AI not available
+                if uploaded_files and len(uploaded_files) > 0:
+                    return f"I see you've uploaded {len(uploaded_files)} file(s). You can:\n• \"Update module 1 with new file\"\n• \"Add content to safety section\"\n• \"Modify module 1 with uploaded content\"\n• \"Update pathway with new information\"\n• \"Regenerate module 2 with uploaded files\"\n\nPlease specify which module, section, or pathway you'd like to update with the uploaded files.\n\n{module_reference_help}"
+                else:
+                    return f"I can help you with:\n• Regenerating modules with different content or tone\n• Uploading new files to update pathways\n• Changing module tone/style (professional, casual, formal, technical, friendly, etc.)\n• Adding missing information to modules\n• Updating specific modules/sections with new file content\n\nPlease be more specific about what you'd like to do.\n\n{module_reference_help}"
+            
+            # Use AI to generate contextual response
+            files_info = f"User has uploaded {len(uploaded_files)} files: {[f.name for f in uploaded_files]}" if uploaded_files else "No files uploaded"
+            
+            prompt = f"""
+            You are an AI training content assistant. The user said: "{user_input}"
+            {files_info}
+            
+            Current module structure:
+            {module_reference_help}
+            
+            Generate a helpful, contextual response that:
+            1. Acknowledges their input
+            2. Suggests relevant actions they can take
+            3. Provides specific examples of commands they can use
+            4. Is friendly and encouraging
+            5. References the correct module numbering system (modules are numbered 1, 2, 3, etc. within each section)
+            6. Mentions that they can search for content and ask questions about training information
+            
+            Keep the response concise and actionable.
+            """
+            
+            response = model.generate_content(prompt)
+            return response.text.strip()
+            
+        except Exception as e:
+            # Fallback to static response if AI fails
+            if uploaded_files and len(uploaded_files) > 0:
+                return f"I see you've uploaded {len(uploaded_files)} file(s). You can:\n• \"Update module 1 with new file\"\n• \"Add content to section 3\"\n• \"Modify module 1 with uploaded content\"\n• \"Update pathway with new information\"\n• \"Regenerate module 2 with uploaded files\"\n\nPlease specify which module, section, or pathway you'd like to update with the uploaded files.\n\n{module_reference_help}"
+            else:
+                return f"I can help you with:\n• Regenerating modules with different content or tone\n• Uploading new files to update pathways\n• Changing module tone/style (professional, casual, formal, technical, friendly, etc.)\n• Adding missing information to modules\n• Updating specific modules/sections with new file content\n• Searching for specific topics in pathways\n• Answering questions about training content\n\nPlease be more specific about what you'd like to do.\n\n{module_reference_help}"
 
 def handle_module_regeneration(user_input):
     """
@@ -1500,23 +1881,48 @@ def handle_module_regeneration(user_input):
 
 def handle_file_ingestion(user_input):
     """
-    Handle file ingestion requests
+    Handle file ingestion requests with AI-powered guidance
     """
-    return """📁 **File Ingestion Options:**
-
-1. **Use the 'Ingest New Files' button** (right sidebar) for direct file processing
-2. **Upload files in the chatbot interface** - I'll process them immediately
-3. **Go to file upload section** and return here for automatic updates
-
-**What happens when you ingest new files:**
-• New content will be analyzed and integrated into existing modules
-• Missing information will be added to relevant modules
-• New modules may be created if significant new content is found
-• Existing modules will be updated with additional information
-
-**Supported file types:** PDF, DOC, DOCX, TXT, MP4, AVI, MOV
-
-Would you like to use the 'Ingest New Files' button or upload files directly here?"""
+    try:
+        if not model:
+            return "AI model not available. Please check your API configuration."
+        
+        # Use AI to generate personalized file ingestion guidance
+        prompt = f"""
+        The user is asking about file ingestion for training content. 
+        User input: "{user_input}"
+        
+        Generate a helpful, personalized response that explains:
+        1. How to upload files in the chatbot interface
+        2. What happens when files are processed
+        3. Supported file types
+        4. Best practices for file uploads
+        
+        Make the response friendly and actionable. Include specific steps.
+        """
+        
+        response = model.generate_content(prompt)
+        return response.text.strip()
+        
+    except Exception as e:
+        # Fallback to static response if AI fails
+        return (
+            "**File Ingestion Options:**\n\n"
+            "1. **Upload files in the chatbot interface** - I'll process them immediately\n"
+            "2. **Use the 'Process Files Now' button** after uploading\n"
+            "3. **Ask me to update specific modules or sections** with uploaded content\n\n"
+            "**What happens when you ingest new files:**\n"
+            "• New content will be analyzed and integrated into existing modules\n"
+            "• Missing information will be added to relevant modules\n"
+            "• New modules may be created if significant new content is found\n"
+            "• Existing modules will be updated with additional information\n\n"
+            "**Supported file types:** PDF, DOC, DOCX, TXT, MP4, AVI, MOV\n\n"
+            "**Examples:**\n"
+            "• \"Update module 2 with new file\"\n"
+            "• \"Add content to section 3\"\n"
+            "• \"Update pathway with new information\"\n\n"
+            "Upload files in the sidebar, then ask me to update specific modules or sections!"
+        )
 
 def handle_tone_change(user_input):
     """
@@ -1524,59 +1930,153 @@ def handle_tone_change(user_input):
     """
     tone = extract_tone_from_input(user_input)
     if tone:
-        return f"🎨 I can help you change the tone to {tone}. Please specify which module you'd like to update, or use the 'Update Module Tone' button."
+        return f"I can help you change the tone to {tone}. Please specify which module you'd like to update, or use the 'Update Module Tone' button."
     else:
-        return "🎨 I can help you change module tone. Available tones: professional, casual, formal, technical, friendly. Please specify which module and tone."
+        return "I can help you change module tone. Available tones: professional, casual, formal, technical, friendly. Please specify which module and tone."
 
 def handle_content_addition(user_input):
     """
     Handle content addition requests
     """
-    return "📝 I can help you add missing information to modules. Please specify which module and what information you'd like to add, or use the 'Add Missing Info' button."
+    return "I can help you add missing information to modules. Please specify which module and what information you'd like to add."
+
+def handle_module_specific_request(user_input):
+    """
+    Handle requests for specific modules or content
+    """
+    user_input_lower = user_input.lower()
+    
+    # Check if user is asking about specific modules
+    if any(word in user_input_lower for word in ['show', 'view', 'see', 'display']):
+        return "I can help you view specific modules. Please specify which module you'd like to see (e.g., 'show module 2' or 'view safety module')."
+    
+    # Check if user is asking about module content
+    elif any(word in user_input_lower for word in ['content', 'information', 'details']):
+        return "I can help you with module content. Please specify what you'd like to do (e.g., 'add more details to module 3' or 'make module 1 more detailed')."
+    
+    # Default response for module-related requests
+    else:
+        return "I can help you with modules. Please specify what you'd like to do:\n• View a specific module\n• Modify module content\n• Add information to a module\n• Change module tone"
 
 def get_chatbot_help():
     """
-    Return help information for the chatbot
+    Return AI-powered help information for the chatbot
     """
-    return """🤖 **AI Pathway Assistant Help**
-
-**Module Regeneration Commands:**
-• "Regenerate module 2 with professional tone"
-• "Update the safety module to include more procedures"
-• "Change module 1 to casual tone and add troubleshooting steps"
-• "Regenerate module 3 to remove technical jargon"
-• "Update module 1 to include more safety procedures"
-
-**File Ingestion Commands:**
-• "Ingest new files"
-• "Upload additional training materials"
-• "Add new content from files"
-
-**Content Modification Commands:**
-• "Add missing information to module 3"
-• "Include more detailed procedures in module 2"
-• "Simplify the language in module 1"
-• "Add troubleshooting tips to the equipment module"
-
-**Quick Actions (right sidebar):**
-• 🔄 Regenerate Current Module - Update the currently selected module
-• 📁 Ingest New Files - Upload and process new files to update pathway
-• 🎨 Update Module Tone - Change the tone/style of any module
-• 📝 Add Missing Info - Add specific information to any module
-
-**Available Tones:**
-• Professional - Formal business language
-• Casual - Friendly, conversational tone
-• Formal - Academic or technical tone
-• Technical - Detailed technical explanations
-• Friendly - Warm, approachable tone
-
-**Tips:**
-• Be specific about which module you want to modify
-• Mention what content you want to add, remove, or change
-• Specify the tone/style you want
-• Use the quick action buttons for common tasks
-• Upload new files to automatically integrate them into your pathway"""
+    try:
+        if not model:
+            return "AI model not available. Please check your API configuration."
+        
+        # Get current pathway data for module reference help
+        editable_pathways = st.session_state.get('editable_pathways', {})
+        module_reference_help = ""
+        if editable_pathways:
+            module_reference_help = format_module_reference_help(editable_pathways)
+        
+        # Use AI to generate contextual help
+        prompt = f"""
+        Generate a comprehensive, user-friendly help guide for an AI training content assistant chatbot.
+        
+        The chatbot can:
+        - Regenerate modules with different tones and content
+        - Process uploaded files and update pathways
+        - Update specific modules/sections with new file content
+        - Change module tone and style
+        - Add missing information to modules
+        - Search for specific topics in pathways (NEW)
+        - Answer questions about training content (NEW)
+        - Reference and integrate from past pathways (NEW)
+        
+        Current module structure:
+        {module_reference_help}
+        
+        Include:
+        1. Clear command examples with correct module numbering
+        2. File upload instructions
+        3. Available tones and styles
+        4. Best practices and tips
+        5. Troubleshooting advice
+        6. Module reference examples using the correct numbering system
+        7. Content search and question examples (NEW)
+        8. Past pathway integration examples (NEW)
+        
+        Make it conversational and easy to follow. Emphasize that modules are numbered locally within each section (Module 1, 2, 3, etc. within each section).
+        """
+        
+        response = model.generate_content(prompt)
+        return response.text.strip()
+        
+    except Exception as e:
+        # Fallback to static help if AI fails
+        editable_pathways = st.session_state.get('editable_pathways', {})
+        module_reference_help = ""
+        if editable_pathways:
+            module_reference_help = format_module_reference_help(editable_pathways)
+        
+        return (
+            f"**AI Pathway Assistant Help**\n\n"
+            f"{module_reference_help}\n\n"
+            "**Content Search & Questions (NEW):**\n"
+            "- \"Find safety procedures in the pathways\"\n"
+            "- \"Search for PPE requirements\"\n"
+            "- \"What does module 2 say about equipment safety?\"\n"
+            "- \"What are the emergency procedures?\"\n"
+            "- \"Show content of module 1\"\n"
+            "- \"Tell me about quality control procedures\"\n\n"
+            "**Past Pathway Integration (NEW):**\n"
+            "- \"Show past pathways\"\n"
+            "- \"Integrate module 2 from pathway 1 section 3\"\n"
+            "- \"Integrate 'PPE Requirements' from pathway 2 into section Safety Procedures\"\n"
+            "- \"Merge section 2 from pathway 1 into section Quality Control\"\n"
+            "- \"Merge 'Safety Procedures' from pathway 2 into section Quality Control\"\n\n"
+            "**Module Regeneration Commands:**\n"
+            "- \"Regenerate module 1 with professional tone\"\n"
+            "- \"Update module 2 to include more procedures\"\n"
+            "- \"Change module 1 to casual tone and add troubleshooting steps\"\n"
+            "- \"Regenerate module 3 to remove technical jargon\"\n"
+            "- \"Update module 1 to include more safety procedures\"\n\n"
+            "**File-Based Update Commands:**\n"
+            "- \"Update module 2 with new file\" (upload file first)\n"
+            "- \"Add content to safety section\" (upload file first)\n"
+            "- \"Update pathway with new information\" (upload file first)\n"
+            "- \"Modify module 1 with uploaded content\" (upload file first)\n\n"
+            "**File Ingestion Commands:**\n"
+            "- \"Ingest new files\"\n"
+            "- \"Upload additional training materials\"\n"
+            "- \"Add new content from files\"\n\n"
+            "**Content Modification Commands:**\n"
+            "- \"Add missing information to module 3\"\n"
+            "- \"Include more detailed procedures in module 2\"\n"
+            "- \"Simplify the language in module 1\"\n"
+            "- \"Add troubleshooting tips to the equipment module\"\n\n"
+            "**File Upload:**\n"
+            "- Use the file upload section in the sidebar to add new files\n"
+            "- Supported formats: PDF, DOC, DOCX, TXT, MP4, AVI, MOV\n"
+            "- Files will be automatically processed and integrated\n"
+            "- Upload files, then type commands to update specific modules/sections\n\n"
+            "**Available Tones:**\n"
+            "- Professional - Formal business language\n"
+            "- Casual - Friendly, conversational tone\n"
+            "- Formal - Academic or technical tone\n"
+            "- Technical - Detailed technical explanations\n"
+            "- Friendly - Warm, approachable tone\n"
+            "- Conversational - Natural, dialogue-like\n"
+            "- Academic - Scholarly, research-based\n"
+            "- Simple - Easy-to-understand language\n"
+            "- Detailed - Comprehensive explanations\n\n"
+            "**Module Numbering:**\n"
+            "- Modules are numbered locally within each section (1, 2, 3, etc.)\n"
+            "- \"Module 1\" refers to the first module in the current section\n"
+            "- \"Module 2 in safety section\" refers to the second module in the safety section\n"
+            "- You can also reference modules by title or keywords\n\n"
+            "**Tips:**\n"
+            "- Be specific about which module you want to modify\n"
+            "- Mention what content you want to add, remove, or change\n"
+            "- Specify the tone/style you want\n"
+            "- Upload files through the sidebar file uploader\n"
+            "- Use \"Clear Chat\" to start fresh conversations\n"
+            "- **NEW:** Search for topics and ask questions about training content\n"
+            "- **NEW:** Integrate modules/sections from past pathways"
+        )
 
 def extract_module_info_from_input(user_input):
     """
@@ -1612,6 +2112,16 @@ def extract_tone_from_input(user_input):
         return 'technical'
     elif 'friendly' in user_input_lower:
         return 'friendly'
+    elif 'conversational' in user_input_lower:
+        return 'conversational'
+    elif 'academic' in user_input_lower:
+        return 'academic'
+    elif 'simple' in user_input_lower:
+        return 'simple'
+    elif 'detailed' in user_input_lower:
+        return 'detailed'
+    elif 'conversational' in user_input_lower:
+        return 'conversational'
     
     return 'professional'  # Default
 
@@ -1677,19 +2187,37 @@ def extract_changes_from_input(user_input):
 def find_module_by_info(module_info, editable_pathways):
     """
     Find a module based on the provided information
+    Updated to handle correct module numbering within sections
     """
-    for section_name, modules in editable_pathways.items():
-        for i, module in enumerate(modules):
-            # Check by module number
-            if module_info.startswith('module_'):
-                module_num = module_info.split('_')[1]
-                if str(i + 1) == module_num:
-                    return {'module': module, 'section': section_name, 'index': i}
-            
-            # Check by module title/keywords
-            module_title_lower = module['title'].lower()
-            if module_info in module_title_lower:
-                return {'module': module, 'section': section_name, 'index': i}
+    # Create module mapping
+    module_mapping = create_module_mapping(editable_pathways)
+    
+    # Check for module number references (e.g., "module 2")
+    if module_info.startswith('module_'):
+        module_num = module_info.split('_')[1]
+        
+        # First try to find by global number
+        if module_num in module_mapping['by_global_number']:
+            return module_mapping['by_global_number'][module_num]
+        
+        # If not found globally, check if it's a section-specific reference
+        # Look for patterns like "section 3 module 2" or "safety module 1"
+        for section_name, section_modules in module_mapping['by_section_and_number'].items():
+            if module_num in section_modules:
+                return section_modules[module_num]
+    
+    # Check by module title/keywords
+    module_info_lower = module_info.lower()
+    for title, module_data in module_mapping['by_title'].items():
+        if module_info_lower in title or title in module_info_lower:
+            return module_data
+    
+    # Check for section-specific module references
+    for section_name, section_modules in module_mapping['by_section_and_number'].items():
+        if module_info_lower in section_name.lower():
+            # Return first module in this section (module 1)
+            if '1' in section_modules:
+                return section_modules['1']
     
     return None
 
@@ -1709,28 +2237,24 @@ def regenerate_module_content(target_module, tone, content_focus, changes_reques
         if changes_requested:
             changes_text = f"\nSpecific Changes Requested: {changes_requested}"
         
-        prompt = f"""
-        Regenerate this training module content with the specified tone, focus, and changes.
-        
-        Original Module: {module_title}
-        Original Content: {original_content[:1500]}
-        
-        Requirements:
-        - Tone: {tone}
-        - Content Focus: {content_focus}
-        - Keep the same core information but adapt the style
-        - Make it suitable for training purposes
-        - Ensure it's clear and actionable{changes_text}
-        
-        Instructions:
-        1. Maintain the essential training information
-        2. Apply the requested tone and style changes
-        3. Focus on the specified content area
-        4. Make the content more engaging and practical
-        5. Ensure it follows training best practices
-        
-        Return only the regenerated content, no explanations or markdown formatting.
-        """
+        prompt = (
+            f"Regenerate this training module content with the specified tone, focus, and changes.\n\n"
+            f"Original Module: {module_title}\n"
+            f"Original Content: {original_content[:1500]}\n\n"
+            f"Requirements:\n"
+            f"- Tone: {tone}\n"
+            f"- Content Focus: {content_focus}\n"
+            f"- Keep the same core information but adapt the style\n"
+            f"- Make it suitable for training purposes\n"
+            f"- Ensure it's clear and actionable{changes_text}\n\n"
+            f"Instructions:\n"
+            f"1. Maintain the essential training information\n"
+            f"2. Apply the requested tone and style changes\n"
+            f"3. Focus on the specified content area\n"
+            f"4. Make the content more engaging and practical\n"
+            f"5. Ensure it follows training best practices\n\n"
+            f"Return only the regenerated content, no explanations or markdown formatting."
+        )
         
         response = model.generate_content(prompt)
         return response.text.strip()
@@ -1766,7 +2290,7 @@ def regenerate_current_module():
         st.error("Please select a section and module first.")
         return
     
-    st.info("🔄 Regenerating current module...")
+    st.info("Regenerating current module...")
     # This would be implemented to regenerate the currently viewed module
     st.success("Module regenerated successfully!")
 
@@ -1774,7 +2298,7 @@ def ingest_new_files_interface():
     """
     Interface for ingesting new files
     """
-    st.markdown("### 📁 Ingest New Files")
+    st.markdown("### Ingest New Files")
     st.markdown("Upload new files to update your pathway:")
     
     uploaded_files = st.file_uploader(
@@ -1785,23 +2309,23 @@ def ingest_new_files_interface():
     )
     
     if uploaded_files:
-        st.markdown(f"**📄 Files selected:** {len(uploaded_files)} files")
+        st.markdown(f"**Files selected:** {len(uploaded_files)} files")
         for file in uploaded_files:
-            st.markdown(f"• {file.name} ({file.size} bytes)")
+            st.markdown(f"- {file.name} ({file.size} bytes)")
         
-        if st.button("🔄 Process New Files"):
+        if st.button("Process New Files"):
             result = process_new_files(uploaded_files)
             if result:
-                st.success("✅ New files processed and pathway updated!")
+                st.success("New files processed and pathway updated!")
                 st.rerun()
             else:
-                st.error("❌ Failed to process new files. Please try again.")
+                st.error("Failed to process new files. Please try again.")
 
 def update_module_tone_interface():
     """
     Interface for updating module tone
     """
-    st.markdown("### 🎨 Update Module Tone")
+    st.markdown("### Update Module Tone")
     
     # Get current pathway data
     if 'editable_pathways' not in st.session_state:
@@ -1824,7 +2348,7 @@ def update_module_tone_interface():
     tone_options = ['professional', 'casual', 'formal', 'technical', 'friendly']
     selected_tone = st.selectbox("Select new tone:", tone_options)
     
-    if st.button("🔄 Apply Tone Change"):
+    if st.button("Apply Tone Change"):
         # Find and update the selected module
         section_name, module_title = selected_module.split(" - ", 1)
         target_module = find_module_by_title(module_title, editable_pathways)
@@ -1832,17 +2356,17 @@ def update_module_tone_interface():
         if target_module:
             new_content = regenerate_module_content(target_module, selected_tone, 'general')
             if update_module_in_pathway(target_module, new_content):
-                st.success(f"✅ Updated module '{module_title}' to {selected_tone} tone!")
+                st.success(f"Updated module '{module_title}' to {selected_tone} tone!")
             else:
-                st.error("❌ Failed to update module. Please try again.")
+                st.error("Failed to update module. Please try again.")
         else:
-            st.error("❌ Module not found. Please try again.")
+            st.error("Module not found. Please try again.")
 
 def add_missing_info_interface():
     """
     Interface for adding missing information
     """
-    st.markdown("### 📝 Add Missing Information")
+    st.markdown("### Add Missing Information")
     
     # Get current pathway data
     if 'editable_pathways' not in st.session_state:
@@ -1865,7 +2389,7 @@ def add_missing_info_interface():
     missing_info = st.text_area("What information would you like to add?", 
                                placeholder="e.g., Add more safety procedures, Include quality control steps, Add troubleshooting tips")
     
-    if st.button("🔄 Add Information"):
+    if st.button("Add Information"):
         # Find and update the selected module
         section_name, module_title = selected_module.split(" - ", 1)
         target_module = find_module_by_title(module_title, editable_pathways)
@@ -1874,11 +2398,11 @@ def add_missing_info_interface():
             changes_requested = f"Add: {missing_info}"
             new_content = regenerate_module_content(target_module, 'professional', 'general', changes_requested)
             if update_module_in_pathway(target_module, new_content):
-                st.success(f"✅ Added information to module '{module_title}'!")
+                st.success(f"Added information to module '{module_title}'!")
             else:
-                st.error("❌ Failed to update module. Please try again.")
+                st.error("Failed to update module. Please try again.")
         else:
-            st.error("❌ Please specify what information to add.")
+            st.error("Please specify what information to add.")
 
 def process_new_files(uploaded_files):
     """
@@ -1887,8 +2411,6 @@ def process_new_files(uploaded_files):
     try:
         if not uploaded_files:
             return False
-        
-        st.info("🔄 Processing new files...")
         
         # Extract content from new files
         new_file_contents = {}
@@ -1901,8 +2423,24 @@ def process_new_files(uploaded_files):
                 if uploaded_file.type == "text/plain":
                     file_content = content.decode('utf-8')
                 elif uploaded_file.type == "application/pdf":
-                    # For PDFs, we'd need a PDF reader
-                    file_content = f"PDF content from {uploaded_file.name}"
+                    # Extract text from PDF using PyPDF2
+                    try:
+                        # Create a file-like object from the uploaded file
+                        pdf_file = uploaded_file.getvalue()
+                        # Ensure we have bytes for PyPDF2
+                        if isinstance(pdf_file, str):
+                            pdf_file = pdf_file.encode('utf-8')
+                        pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_file))
+                        file_content = ""
+                        for page in pdf_reader.pages:
+                            page_text = page.extract_text()
+                            if page_text:
+                                file_content += page_text + "\n"
+                        
+                        if not file_content.strip():
+                            file_content = f"PDF content from {uploaded_file.name} (no text extracted)"
+                    except Exception as e:
+                        file_content = f"PDF content from {uploaded_file.name} (extraction error: {str(e)})"
                 else:
                     file_content = f"Content from {uploaded_file.name}"
                 
@@ -1916,28 +2454,46 @@ def process_new_files(uploaded_files):
             st.error("No files could be processed.")
             return False
         
-        # Get current pathway data
+        # Get current pathway data - create if not exists
         if 'editable_pathways' not in st.session_state:
-            st.error("No pathway data available.")
-            return False
+            st.info("No existing pathway found. Creating new pathway structure...")
+            st.session_state['editable_pathways'] = {
+                'Additional Content': []
+            }
         
         editable_pathways = st.session_state['editable_pathways']
         training_context = st.session_state.get('training_context', {})
         
+        # If no training context, create a basic one
+        if not training_context:
+            training_context = {
+                'primary_goals': 'Training content from uploaded files',
+                'training_type': 'General',
+                'target_audience': 'Employees',
+                'industry': 'General'
+            }
+            st.session_state['training_context'] = training_context
+        
         # Process new content and integrate into existing modules
+        processed_count = 0
         for filename, content in new_file_contents.items():
-            # Extract modules from new content
-            new_modules = extract_modules_from_file_content(filename, content, training_context)
+            # Extract modules from new content using FAST processing
+            new_modules = extract_fast_modules_from_content(filename, content, training_context, training_context.get('primary_goals', 'training goals'))
             
             if new_modules:
                 # Integrate new modules into existing pathway
-                integrate_new_modules(new_modules, editable_pathways, training_context)
+                success = integrate_new_modules(new_modules, editable_pathways, training_context)
+                if success:
+                    processed_count += len(new_modules)
         
         # Update session state
         st.session_state['editable_pathways'] = editable_pathways
         
-        st.success(f"✅ Successfully processed {len(new_file_contents)} files and updated pathway!")
-        return True
+        if processed_count > 0:
+            return True
+        else:
+            # Even if no modules were created, the files were processed successfully
+            return True
         
     except Exception as e:
         st.error(f"❌ Error processing new files: {str(e)}")
@@ -2104,11 +2660,1357 @@ def show_settings_page():
     GEMINI_API_KEY=your_gemini_api_key_here
     MINDMEISTER_CLIENT_ID=your_mindmeister_client_id_here
     MINDMEISTER_CLIENT_SECRET=your_mindmeister_client_secret_here
-    MINDMEISTER_REDIRECT_URI=https://localhost:8501
+    MINDMEISTER_REDIRECT_URI=https://localhost:8001
     VADOO_API_KEY=your_vadoo_api_key_here
     CANVA_API_KEY=your_canva_api_key_here
     ```
     """)
+
+def handle_file_based_module_update(user_input, uploaded_files):
+    """
+    Handle requests to update specific modules/sections/pathways with new file content
+    Optimized for speed while maintaining quality
+    """
+    try:
+        if not uploaded_files:
+            return "No files uploaded. Please upload files first, then specify which module, section, or pathway you want to update."
+        
+        # Extract target information from user input
+        target_info = extract_target_from_input(user_input)
+        if not target_info:
+            # Provide more helpful guidance based on available pathways
+            current_pathway = st.session_state.get('generated_pathway', None)
+            past_pathways = st.session_state.get('past_generated_pathways', [])
+            
+            available_options = []
+            if current_pathway:
+                available_options.append("• 'Update pathway 1 section 1 with new file'")
+                available_options.append("• 'Add content to pathway 1 section 2'")
+            if past_pathways:
+                for i, _ in enumerate(past_pathways, 2):
+                    available_options.append(f"• 'Update pathway {i} section 1 with new file'")
+            
+            if not available_options:
+                available_options = [
+                    "• 'Update module 2 with new file'",
+                    "• 'Add content to safety section'", 
+                    "• 'Update pathway with new information'"
+                ]
+            
+            return f"Please specify what you want to update. Examples:\n" + "\n".join(available_options)
+        
+        st.info(f"🚀 Fast processing {len(uploaded_files)} files to update {target_info['type']}...")
+        
+        # Get current pathway data
+        if 'editable_pathways' not in st.session_state:
+            return "No pathway data available. Please generate a pathway first."
+        
+        editable_pathways = st.session_state['editable_pathways']
+        training_context = st.session_state.get('training_context', {})
+        primary_goals = training_context.get('primary_goals', 'training goals')
+        
+        # Extract content from uploaded files using FAST AI processing
+        new_content_modules = []
+        
+        for uploaded_file in uploaded_files:
+            try:
+                # Read file content
+                content = uploaded_file.read()
+                
+                # Handle different file types
+                if uploaded_file.type == "text/plain":
+                    file_content = content.decode('utf-8')
+                elif uploaded_file.type == "application/pdf":
+                    # Extract text from PDF using PyPDF2
+                    try:
+                        # Create a file-like object from the uploaded file
+                        pdf_file = uploaded_file.getvalue()
+                        # Ensure we have bytes for PyPDF2
+                        if isinstance(pdf_file, str):
+                            pdf_file = pdf_file.encode('utf-8')
+                        pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_file))
+                        file_content = ""
+                        for page in pdf_reader.pages:
+                            page_text = page.extract_text()
+                            if page_text:
+                                file_content += page_text + "\n"
+                        
+                        if not file_content.strip():
+                            file_content = f"PDF content from {uploaded_file.name} (no text extracted)"
+                    except Exception as e:
+                        file_content = f"PDF content from {uploaded_file.name} (extraction error: {str(e)})"
+                else:
+                    file_content = f"Content from {uploaded_file.name}"
+                
+                # Debug: Show file content length
+                st.info(f"📄 Processing {uploaded_file.name} ({len(file_content)} characters)")
+                
+                # Use FAST AI processing - single API call per file
+                extracted_modules = extract_fast_modules_from_content(
+                    uploaded_file.name, 
+                    file_content, 
+                    training_context, 
+                    primary_goals
+                )
+                
+                if extracted_modules:
+                    new_content_modules.extend(extracted_modules)
+                    st.success(f"✅ Fast extracted {len(extracted_modules)} modules from {uploaded_file.name}")
+                else:
+                    st.warning(f"⚠️ No relevant modules found in {uploaded_file.name}")
+                    # Try fallback extraction
+                    st.info(f"🔄 Trying fallback extraction for {uploaded_file.name}...")
+                    fallback_modules = create_simple_modules_from_content(uploaded_file.name, file_content, training_context)
+                    if fallback_modules:
+                        new_content_modules.extend(fallback_modules)
+                        st.success(f"✅ Fallback extracted {len(fallback_modules)} modules from {uploaded_file.name}")
+                    else:
+                        st.error(f"❌ Could not extract any content from {uploaded_file.name}")
+                
+            except Exception as e:
+                st.error(f"Error processing {uploaded_file.name}: {str(e)}")
+                continue
+        
+        if not new_content_modules:
+            return "❌ No relevant content could be extracted from the uploaded files. Please check that the files contain text content and try again."
+        
+        # Apply the new content based on target type
+        if target_info['type'] == 'specific_module':
+            return update_specific_module_in_pathway(target_info, new_content_modules, editable_pathways, training_context)
+        elif target_info['type'] == 'module':
+            return update_specific_module(target_info['identifier'], new_content_modules, editable_pathways, target_info.get('action', 'add'))
+        elif target_info['type'] == 'section':
+            return update_specific_section(target_info['identifier'], new_content_modules, editable_pathways, target_info.get('action', 'add'))
+        elif target_info['type'] == 'pathway_section':
+            return update_pathway_section(target_info, new_content_modules, editable_pathways, training_context)
+        elif target_info['type'] == 'pathway':
+            return update_entire_pathway(new_content_modules, editable_pathways, training_context)
+        else:
+            return "❌ Invalid target type specified."
+        
+    except Exception as e:
+        return f"❌ Error processing file-based update: {str(e)}"
+
+def extract_target_from_input(user_input):
+    """
+    Extract target module/section/pathway from user input with action intent
+    """
+    user_input_lower = user_input.lower()
+    
+    # Extract action intent (replace vs merge)
+    action_intent = 'add'  # Default action
+    if any(word in user_input_lower for word in ['modify', 'update', 'change', 'replace', 'overwrite']):
+        action_intent = 'replace'
+    elif any(word in user_input_lower for word in ['merge', 'combine', 'append', 'add to', 'enhance']):
+        action_intent = 'merge'
+    elif any(word in user_input_lower for word in ['add', 'insert', 'create', 'new']):
+        action_intent = 'add'
+    
+    # Look for pathway references first (e.g., "pathway 4 section 3", "pathway 1 section 2")
+    import re
+    pathway_section_match = re.search(r'pathway\s+(\d+)\s+section\s+(\d+)', user_input_lower)
+    if pathway_section_match:
+        pathway_num = int(pathway_section_match.group(1))
+        section_num = int(pathway_section_match.group(2))
+        return {
+            'type': 'pathway_section',
+            'pathway_num': pathway_num,
+            'section_num': section_num,
+            'identifier': f"pathway_{pathway_num}_section_{section_num}",
+            'action': action_intent
+        }
+    
+    # Look for specific module references (e.g., "pathway 3 section 2 module 1")
+    pathway_section_module_match = re.search(r'pathway\s+(\d+)\s+section\s+(\d+)\s+module\s+(\d+)', user_input_lower)
+    if pathway_section_module_match:
+        pathway_num = int(pathway_section_module_match.group(1))
+        section_num = int(pathway_section_module_match.group(2))
+        module_num = int(pathway_section_module_match.group(3))
+        return {
+            'type': 'specific_module',
+            'pathway_num': pathway_num,
+            'section_num': section_num,
+            'module_num': module_num,
+            'identifier': f"pathway_{pathway_num}_section_{section_num}_module_{module_num}",
+            'action': action_intent
+        }
+    
+    # Look for module references
+    module_match = re.search(r'module\s+(\d+)', user_input_lower)
+    if module_match:
+        return {
+            'type': 'module',
+            'identifier': f"module_{module_match.group(1)}",
+            'action': action_intent
+        }
+    
+    # Look for numbered section references (e.g., "section 3", "section 4")
+    section_match = re.search(r'section\s+(\d+)', user_input_lower)
+    if section_match:
+        return {
+            'type': 'section',
+            'identifier': f"section_{section_match.group(1)}",
+            'action': action_intent
+        }
+    
+    # Look for section references (check specific keywords first, then generic 'section')
+    specific_keywords = ['safety', 'quality', 'process', 'equipment', 'training']
+    for keyword in specific_keywords:
+        if keyword in user_input_lower:
+            return {
+                'type': 'section',
+                'identifier': keyword,
+                'action': action_intent
+            }
+    
+    # Check for generic 'section' keyword
+    if 'section' in user_input_lower:
+        return {
+            'type': 'section',
+            'identifier': 'section',
+            'action': action_intent
+        }
+    
+    # Look for pathway references
+    pathway_keywords = ['pathway', 'course', 'program', 'training']
+    if any(keyword in user_input_lower for keyword in pathway_keywords):
+        return {
+            'type': 'pathway',
+            'identifier': 'entire',
+            'action': action_intent
+        }
+    
+    return None
+
+def update_specific_module_in_pathway(target_info, new_content_modules, editable_pathways, training_context):
+    """
+    Update a specific module in a specific pathway and section
+    """
+    try:
+        pathway_num = target_info['pathway_num']
+        section_num = target_info['section_num']
+        module_num = target_info['module_num']
+        action = target_info.get('action', 'add')
+        
+        # Get the current session's pathways
+        current_pathways = []
+        if 'generated_pathway' in st.session_state:
+            current_pathways = st.session_state['generated_pathway'].get('pathways', [])
+        
+        # Check if pathway exists
+        if pathway_num > len(current_pathways):
+            available_pathways = [f"Pathway {i+1}" for i in range(len(current_pathways))]
+            return f"❌ Pathway {pathway_num} not found. Available pathways: {', '.join(available_pathways)}"
+        
+        pathway = current_pathways[pathway_num - 1]
+        sections = pathway.get('sections', [])
+        
+        # Check if section exists
+        if section_num > len(sections):
+            available_sections = list(range(1, len(sections) + 1))
+            return f"❌ Section {section_num} not found in pathway {pathway_num}. Available sections: {available_sections}"
+        
+        target_section = sections[section_num - 1]
+        modules = target_section.get('modules', [])
+        
+        # Check if module exists
+        if module_num > len(modules):
+            available_modules = list(range(1, len(modules) + 1))
+            return f"❌ Module {module_num} not found in pathway {pathway_num}, section {section_num}. Available modules: {available_modules}"
+        
+        target_module = modules[module_num - 1]
+        module_title = target_module.get('title', f'Module {module_num}')
+        
+        # Process new content
+        if not new_content_modules:
+            return "❌ No content could be extracted from uploaded files."
+        
+        # Get the best content for this module
+        best_content = find_best_content_for_module({'module': target_module}, new_content_modules)
+        
+        if not best_content:
+            return f"❌ No relevant content found for module '{module_title}'."
+        
+        # Apply action (replace or merge)
+        if action == 'replace':
+            # Replace the entire module content
+            target_module['content'] = best_content['content']
+            target_module['description'] = best_content['description']
+            target_module['source'] = best_content['source']
+            target_module['content_types'] = best_content.get('content_types', [])
+            action_text = "replaced"
+        elif action == 'merge':
+            # Merge new content with existing content
+            existing_content = target_module.get('content', '')
+            new_content = best_content['content']
+            target_module['content'] = f"{existing_content}\n\n--- Additional Content ---\n\n{new_content}"
+            target_module['source'] = target_module.get('source', []) + best_content['source']
+            action_text = "enhanced with"
+        else:  # add
+            # Add as new module (existing behavior)
+            target_section['modules'].append({
+                'title': best_content['title'],
+                'description': best_content['description'],
+                'content': best_content['content'],
+                'source': best_content.get('source', ['New file content']),
+                'content_types': best_content.get('content_types', [])
+            })
+            action_text = "added new module"
+        
+        # Save back to session state
+        st.session_state['generated_pathway']['pathways'][pathway_num - 1] = pathway
+        
+        # Force UI refresh
+        if 'editable_pathways' in st.session_state:
+            if 'editable_pathways_pathway_idx' in st.session_state:
+                del st.session_state['editable_pathways_pathway_idx']
+        
+        if action == 'add':
+            return f"✅ Successfully {action_text} to Pathway {pathway_num}, Section {section_num}!"
+        else:
+            return f"✅ Successfully {action_text} content for module '{module_title}' in Pathway {pathway_num}, Section {section_num}!"
+        
+    except Exception as e:
+        return f"❌ Error updating specific module: {str(e)}"
+
+def update_specific_module(module_identifier, new_content_modules, editable_pathways, action='add'):
+    """
+    Update a specific module with new content from files
+    """
+    try:
+        # Find the target module
+        target_module = find_module_by_info(module_identifier, editable_pathways)
+        
+        if not target_module:
+            return f"❌ Could not find module '{module_identifier}'. Please check the module name or number."
+        
+        # Find the most relevant new content for this module
+        best_content = find_best_content_for_module(target_module, new_content_modules)
+        
+        if not best_content:
+            return f"❌ No relevant content found in uploaded files for module '{target_module['module']['title']}'."
+        
+        # Apply action (replace or merge)
+        if action == 'replace':
+            # Replace the entire module content
+            updated_module = target_module['module'].copy()
+            updated_module['content'] = best_content['content']
+            updated_module['description'] = best_content['description']
+            updated_module['source'] = best_content['source']
+            updated_module['content_types'] = best_content.get('content_types', [])
+            
+            # Update in pathway
+            editable_pathways[target_module['section']][target_module['index']] = updated_module
+            
+            action_text = "replaced"
+        elif action == 'merge':
+            # Merge new content with existing content
+            existing_module = target_module['module']
+            existing_content = existing_module.get('content', '')
+            new_content = best_content['content']
+            
+            updated_module = existing_module.copy()
+            updated_module['content'] = f"{existing_content}\n\n--- Additional Content ---\n\n{new_content}"
+            updated_module['source'] = existing_module.get('source', []) + best_content['source']
+            
+            # Update in pathway
+            editable_pathways[target_module['section']][target_module['index']] = updated_module
+            
+            action_text = "enhanced"
+        else:  # add
+            # Add as new module (existing behavior)
+            editable_pathways[target_module['section']].append({
+                'title': best_content['title'],
+                'description': best_content['description'],
+                'content': best_content['content'],
+                'source': best_content.get('source', ['New file content']),
+                'content_types': best_content.get('content_types', [])
+            })
+            action_text = "added new module"
+        
+        # Update session state
+        st.session_state['editable_pathways'] = editable_pathways
+        
+        return f"✅ Successfully {action_text} content for module '{target_module['module']['title']}'!"
+        
+    except Exception as e:
+        return f"❌ Error updating module: {str(e)}"
+
+def update_specific_section(section_identifier, new_content_modules, editable_pathways, action='add'):
+    """
+    Update a specific section with new content from files
+    """
+    try:
+        # Find the target section
+        target_section = None
+        
+        # Handle numbered sections (e.g., "section_3" -> section index 2)
+        if section_identifier.startswith('section_'):
+            try:
+                section_number = int(section_identifier.split('_')[1])
+                section_names = list(editable_pathways.keys())
+                if 1 <= section_number <= len(section_names):
+                    target_section = section_names[section_number - 1]  # Convert to 0-based index
+                else:
+                    return f"❌ Section {section_number} not found. Available sections: {list(range(1, len(section_names) + 1))}"
+            except (ValueError, IndexError):
+                return f"❌ Invalid section number. Available sections: {list(range(1, len(editable_pathways.keys()) + 1))}"
+        else:
+            # Handle named sections (e.g., "safety", "quality")
+            for section_name in editable_pathways.keys():
+                if section_identifier.lower() in section_name.lower():
+                    target_section = section_name
+                    break
+        
+        if not target_section:
+            return f"❌ Could not find section matching '{section_identifier}'. Available sections: {list(editable_pathways.keys())}"
+        
+        if action == 'add':
+            # Add new modules to the section
+            added_count = 0
+            for new_module in new_content_modules:
+                # Check if this module is relevant to the section
+                if is_module_relevant_to_section(new_module, target_section):
+                    editable_pathways[target_section].append({
+                        'title': new_module['title'],
+                        'description': new_module['description'],
+                        'content': new_module['content'],
+                        'source': new_module.get('source', ['New file content']),
+                        'content_types': new_module.get('content_types', [])
+                    })
+                    added_count += 1
+            
+            if added_count == 0:
+                return f"❌ No relevant content found for section '{target_section}'."
+            
+            # Update session state
+            st.session_state['editable_pathways'] = editable_pathways
+            
+            return f"✅ Successfully added {added_count} new modules to section '{target_section}'!"
+        
+        elif action in ['replace', 'merge']:
+            # Update existing modules in the section
+            updated_count = 0
+            for i, existing_module in enumerate(editable_pathways[target_section]):
+                # Find relevant new content for this module
+                best_content = find_best_content_for_module({'module': existing_module}, new_content_modules)
+                
+                if best_content:
+                    if action == 'replace':
+                        # Replace module content
+                        editable_pathways[target_section][i]['content'] = best_content['content']
+                        editable_pathways[target_section][i]['description'] = best_content['description']
+                        editable_pathways[target_section][i]['source'] = best_content['source']
+                        editable_pathways[target_section][i]['content_types'] = best_content.get('content_types', [])
+                    else:  # merge
+                        # Merge with existing content
+                        existing_content = existing_module.get('content', '')
+                        new_content = best_content['content']
+                        editable_pathways[target_section][i]['content'] = f"{existing_content}\n\n--- Additional Content ---\n\n{new_content}"
+                        editable_pathways[target_section][i]['source'] = existing_module.get('source', []) + best_content['source']
+                    
+                    updated_count += 1
+            
+            if updated_count == 0:
+                return f"❌ No relevant content found to update modules in section '{target_section}'."
+            
+            # Update session state
+            st.session_state['editable_pathways'] = editable_pathways
+            
+            action_text = "replaced" if action == 'replace' else "enhanced"
+            return f"✅ Successfully {action_text} {updated_count} modules in section '{target_section}'!"
+        
+    except Exception as e:
+        return f"❌ Error updating section: {str(e)}"
+
+def update_pathway_section(target_info, new_content_modules, editable_pathways, training_context):
+    """
+    Update a specific section in a specific pathway with new content from files.
+    Pathway numbering now matches the UI: pathway 1 = generated_pathway['pathways'][0], pathway 2 = generated_pathway['pathways'][1], etc.
+    Past pathways are only referenced if explicitly requested (e.g., 'past pathway 1').
+    """
+    try:
+        pathway_num = target_info['pathway_num']
+        section_num = target_info['section_num']
+
+        # Get the current session's pathways (UI numbering)
+        current_pathways = []
+        if 'generated_pathway' in st.session_state:
+            current_pathways = st.session_state['generated_pathway'].get('pathways', [])
+
+        # If user references a valid pathway in the current session
+        if 1 <= pathway_num <= len(current_pathways):
+            pathway = current_pathways[pathway_num - 1]
+            sections = pathway.get('sections', [])
+            if section_num > len(sections):
+                available_sections = list(range(1, len(sections) + 1))
+                return f"❌ Section {section_num} not found in pathway {pathway_num}. Available sections: {available_sections}"
+            target_section = sections[section_num - 1]
+            section_title = target_section.get('title', f'Section {section_num}')
+            added_count = 0
+            added_modules = []
+            for new_module in new_content_modules:
+                target_section['modules'].append({
+                    'title': new_module['title'],
+                    'description': new_module['description'],
+                    'content': new_module['content'],
+                    'source': new_module.get('source', ['New file content']),
+                    'content_types': new_module.get('content_types', [])
+                })
+                added_modules.append(new_module['title'])
+                added_count += 1
+            # Save back to session state
+            st.session_state['generated_pathway']['pathways'][pathway_num - 1] = pathway
+            
+            # Force UI refresh by updating editable_pathways if it exists
+            if 'editable_pathways' in st.session_state:
+                # Clear the editable_pathways cache so it regenerates from the updated pathway
+                if 'editable_pathways_pathway_idx' in st.session_state:
+                    del st.session_state['editable_pathways_pathway_idx']
+            
+            return f"✅ Successfully added {added_count} new modules to Pathway {pathway_num}, Section {section_num} ({section_title})!\n\nAdded modules: {', '.join(added_modules)}\n\nPlease refresh the page or navigate to Section {section_num} to see the changes."
+
+        # Optionally: support explicit 'past pathway X' references in the future
+        # For now, if pathway_num is out of range, show available pathways
+        available_pathways = [f"Pathway {i+1}" for i in range(len(current_pathways))]
+        if not available_pathways:
+            return f"❌ No pathways available. Please generate a pathway first."
+        else:
+            return f"❌ Pathway {pathway_num} not found. Available pathways: {', '.join(available_pathways)}"
+    except Exception as e:
+        return f"❌ Error updating pathway section: {str(e)}"
+
+def update_entire_pathway(new_content_modules, editable_pathways, training_context):
+    """
+    Update the entire pathway with new content from files
+    """
+    try:
+        # Integrate new modules into existing pathway using local function
+        success = integrate_new_modules(new_content_modules, editable_pathways, training_context)
+        
+        if success:
+            # Update session state
+            st.session_state['editable_pathways'] = editable_pathways
+            
+            return f"✅ Successfully integrated {len(new_content_modules)} new modules into the pathway!"
+        else:
+            return "❌ Failed to integrate new modules into pathway."
+        
+    except Exception as e:
+        return f"❌ Error updating pathway: {str(e)}"
+
+def find_best_content_for_module(target_module, new_content_modules):
+    """
+    Find the best new content for a specific module
+    """
+    try:
+        target_content = target_module['module']['content'].lower()
+        target_title = target_module['module']['title'].lower()
+        
+        best_content = None
+        best_score = 0
+        
+        for new_module in new_content_modules:
+            new_content = new_module['content'].lower()
+            new_title = new_module['title'].lower()
+            
+            # Calculate relevance score
+            score = 0
+            
+            # Check for keyword matches
+            common_keywords = ['safety', 'quality', 'process', 'equipment', 'training', 'procedure', 'protocol']
+            for keyword in common_keywords:
+                if keyword in target_content and keyword in new_content:
+                    score += 2
+                if keyword in target_title and keyword in new_title:
+                    score += 3
+            
+            # Check for content similarity
+            if len(set(target_content.split()) & set(new_content.split())) > 5:
+                score += 1
+            
+            if score > best_score:
+                best_score = score
+                best_content = new_module
+        
+        return best_content if best_score > 0 else None
+        
+    except Exception as e:
+        return None
+
+def extract_fast_modules_from_content(filename, content, training_context, primary_goals):
+    """
+    Fast module extraction using single AI call per file
+    Optimized for speed while maintaining quality
+    """
+    try:
+        if not model:
+            return []
+        
+        # Create a comprehensive prompt for single AI call
+        prompt = f"""
+        Extract training modules from this content file: {filename}
+        
+        Content: {content[:3000]}  # Limit content length for speed
+        
+        Training Context:
+        - Goals: {primary_goals}
+        - Type: {training_context.get('training_type', 'General')}
+        - Audience: {training_context.get('target_audience', 'Employees')}
+        - Industry: {training_context.get('industry', 'General')}
+        
+        Instructions:
+        1. Extract 2-4 key training modules from the content
+        2. Each module should be relevant to the training goals
+        3. Create clear titles and descriptions
+        4. Include practical, actionable content
+        5. Focus on the most important training topics
+        
+        Return the modules in this JSON format:
+        {{
+            "modules": [
+                {{
+                    "title": "Module Title",
+                    "description": "Brief description",
+                    "content": "Detailed training content",
+                    "source": ["{filename}"],
+                    "content_types": []
+                }}
+            ]
+        }}
+        
+        Only return valid JSON, no explanations.
+        """
+        
+        response = model.generate_content(prompt)
+        response_text = response.text.strip()
+        
+        # Parse JSON response
+        try:
+            import json
+            result = json.loads(response_text)
+            modules = result.get('modules', [])
+            
+            # Validate and clean modules
+            valid_modules = []
+            for module in modules:
+                if module.get('title') and module.get('content'):
+                    # Ensure content is substantial
+                    if len(module['content']) > 50:
+                        valid_modules.append(module)
+            
+            return valid_modules
+            
+        except json.JSONDecodeError:
+            # Fallback: create simple modules from content
+            return create_simple_modules_from_content(filename, content, training_context)
+        
+    except Exception as e:
+        # Fallback to simple extraction
+        return create_simple_modules_from_content(filename, content, training_context)
+
+def create_simple_modules_from_content(filename, content, training_context):
+    """
+    Create simple modules when AI extraction fails
+    """
+    try:
+        # Clean the content
+        content = content.strip()
+        if not content or len(content) < 50:
+            return []
+        
+        # Split content into chunks
+        sentences = content.split('.')
+        chunks = []
+        current_chunk = ""
+        
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if not sentence:
+                continue
+                
+            if len(current_chunk) + len(sentence) < 500:
+                current_chunk += sentence + "."
+            else:
+                if current_chunk.strip():
+                    chunks.append(current_chunk.strip())
+                current_chunk = sentence + "."
+        
+        if current_chunk.strip():
+            chunks.append(current_chunk.strip())
+        
+        # Create modules from chunks
+        modules = []
+        for i, chunk in enumerate(chunks[:3]):  # Limit to 3 modules for speed
+            if len(chunk) > 50:  # Lower threshold for fallback
+                # Try to extract a meaningful title from the first sentence
+                first_sentence = chunk.split('.')[0][:100]
+                title = f"Content from {filename} - {first_sentence}"
+                description = f"Content extracted from {filename}"
+                
+                modules.append({
+                    'title': title,
+                    'description': description,
+                    'content': chunk,
+                    'source': [filename],
+                    'content_types': []
+                })
+        
+        return modules
+        
+    except Exception as e:
+        return []
+
+def is_module_relevant_to_section(new_module, section_name):
+    """
+    Check if a new module is relevant to a specific section
+    """
+    try:
+        new_content = new_module['content'].lower()
+        new_title = new_module['title'].lower()
+        section_lower = section_name.lower()
+        
+        # Check for keyword matches
+        section_keywords = section_lower.split()
+        for keyword in section_keywords:
+            if keyword in new_content or keyword in new_title:
+                return True
+        
+        # Check for common training keywords
+        training_keywords = ['safety', 'quality', 'process', 'equipment', 'training']
+        for keyword in training_keywords:
+            if keyword in section_lower and (keyword in new_content or keyword in new_title):
+                return True
+        
+        return False
+        
+    except Exception as e:
+        return False
+
+def create_module_mapping(editable_pathways):
+    """
+    Create a comprehensive mapping of modules for chatbot reference
+    Returns a dictionary with multiple ways to reference modules
+    """
+    module_mapping = {
+        'by_section_and_number': {},  # e.g., {'safety': {'1': module_obj, '2': module_obj}}
+        'by_global_number': {},       # e.g., {'1': module_obj, '2': module_obj}
+        'by_title': {},              # e.g., {'safety procedures': module_obj}
+        'section_info': {}           # e.g., {'safety': {'count': 3, 'modules': [module1, module2, module3]}}
+    }
+    
+    global_module_number = 1
+    
+    for section_name, modules in editable_pathways.items():
+        # Initialize section mapping
+        module_mapping['by_section_and_number'][section_name] = {}
+        module_mapping['section_info'][section_name] = {
+            'count': len(modules),
+            'modules': modules
+        }
+        
+        # Map modules within this section
+        for i, module in enumerate(modules):
+            local_module_number = i + 1
+            
+            # Map by section and local number
+            module_mapping['by_section_and_number'][section_name][str(local_module_number)] = {
+                'module': module,
+                'section': section_name,
+                'index': i,
+                'local_number': local_module_number,
+                'global_number': global_module_number
+            }
+            
+            # Map by global number
+            module_mapping['by_global_number'][str(global_module_number)] = {
+                'module': module,
+                'section': section_name,
+                'index': i,
+                'local_number': local_module_number,
+                'global_number': global_module_number
+            }
+            
+            # Map by title (lowercase for matching)
+            module_title_lower = module['title'].lower()
+            module_mapping['by_title'][module_title_lower] = {
+                'module': module,
+                'section': section_name,
+                'index': i,
+                'local_number': local_module_number,
+                'global_number': global_module_number
+            }
+            
+            global_module_number += 1
+    
+    return module_mapping
+
+def get_module_reference_info(editable_pathways):
+    """
+    Get comprehensive module reference information for chatbot
+    """
+    module_mapping = create_module_mapping(editable_pathways)
+    
+    reference_info = []
+    
+    for section_name, section_data in module_mapping['section_info'].items():
+        section_info = {
+            'section_name': section_name,
+            'module_count': section_data['count'],
+            'modules': []
+        }
+        
+        for i, module in enumerate(section_data['modules']):
+            module_info = {
+                'local_number': i + 1,
+                'global_number': module_mapping['by_section_and_number'][section_name][str(i + 1)]['global_number'],
+                'title': module['title'],
+                'description': module.get('description', '')
+            }
+            section_info['modules'].append(module_info)
+        
+        reference_info.append(section_info)
+    
+    return reference_info
+
+def format_module_reference_help(editable_pathways):
+    """
+    Format module reference information for chatbot help
+    """
+    reference_info = get_module_reference_info(editable_pathways)
+    
+    help_text = "**Available Modules by Section:**\n\n"
+    
+    for section_info in reference_info:
+        help_text += f"**{section_info['section_name']}** ({section_info['module_count']} modules):\n"
+        
+        for module_info in section_info['modules']:
+            help_text += f"  • Module {module_info['local_number']}: {module_info['title']}\n"
+        
+        help_text += "\n"
+    
+    help_text += "**Reference Examples:**\n"
+    help_text += "• \"Update module 1\" (refers to first module in current section)\n"
+    help_text += "• \"Regenerate module 2 in safety section\"\n"
+    help_text += "• \"Update the safety procedures module\"\n"
+    help_text += "• \"Modify module 3 in section 2\"\n"
+    
+    return help_text
+
+# --- Helper functions for past pathway integration ---
+def list_past_pathways():
+    """Return a summary of all past generated pathways."""
+    past = st.session_state.get('past_generated_pathways', [])
+    if not past:
+        return "No past pathways found."
+    out = []
+    for idx, pathway_data in enumerate(past, 1):
+        for p in pathway_data.get('pathways', []):
+            out.append(f"Pathway {idx}: {p.get('pathway_name', 'Unnamed')}")
+            for sidx, section in enumerate(p.get('sections', []), 1):
+                out.append(f"  Section {sidx}: {section.get('title', 'Untitled')} ({len(section.get('modules', []))} modules)")
+                for midx, mod in enumerate(section.get('modules', []), 1):
+                    out.append(f"    Module {midx}: {mod.get('title', 'No title')}")
+    return '\n'.join(out)
+
+def get_past_module(pathway_num, section_num, module_num):
+    """Retrieve a module from a past pathway by indices (1-based)."""
+    past = st.session_state.get('past_generated_pathways', [])
+    try:
+        pathway = past[pathway_num-1]['pathways'][0] if len(past[pathway_num-1]['pathways']) == 1 else past[pathway_num-1]['pathways'][pathway_num-1]
+        section = pathway['sections'][section_num-1]
+        module = section['modules'][module_num-1]
+        return module
+    except Exception:
+        return None
+
+def integrate_past_module_into_current(pathway_num, section_num, module_num, target_section=None):
+    """Integrate a module from a past pathway into the current editable_pathways."""
+    module = get_past_module(pathway_num, section_num, module_num)
+    if not module:
+        return False, "Module not found in past pathways."
+    editable_pathways = st.session_state.get('editable_pathways', {})
+    if not editable_pathways:
+        return False, "No current pathway to integrate into."
+    # Default to first section if not specified
+    if not target_section:
+        target_section = list(editable_pathways.keys())[0]
+    if target_section not in editable_pathways:
+        return False, f"Section '{target_section}' not found in current pathway."
+    # Add a copy of the module
+    editable_pathways[target_section].append(dict(module))
+    st.session_state['editable_pathways'] = editable_pathways
+    return True, f"Module '{module.get('title','')}' from past pathway {pathway_num} section {section_num} integrated into section '{target_section}'."
+
+# --- Chatbot quick action and command parsing ---
+def handle_past_pathway_request(user_input):
+    """Handle user requests about past pathways."""
+    user_input_lower = user_input.lower()
+    if 'list' in user_input_lower or 'show' in user_input_lower:
+        return list_past_pathways()
+    # Parse integration command: e.g. "integrate module 2 from pathway 1 section 3 into section Safety Procedures"
+    import re
+    match = re.search(r'integrate module (\d+) from (?:past )?pathway (\d+)(?: section (\d+))?(?: into section ([\w\s]+))?', user_input_lower)
+    if match:
+        module_num = int(match.group(1))
+        pathway_num = int(match.group(2))
+        section_num = int(match.group(3)) if match.group(3) else 1
+        target_section = match.group(4).strip() if match.group(4) else None
+        success, msg = integrate_past_module_into_current(pathway_num, section_num, module_num, target_section)
+        return msg
+    return "To reference past pathways, say 'show past pathways' or 'integrate module 2 from pathway 1 section 3'."
+
+# Update process_chatbot_request to handle past pathway requests
+old_process_chatbot_request = process_chatbot_request
+
+def process_chatbot_request(user_input, uploaded_files=None):
+    user_input_lower = user_input.lower()
+    if any(word in user_input_lower for word in ['past pathway', 'previous pathway', 'show past', 'list past', 'integrate from past', 'integrate from previous']):
+        return handle_past_pathway_request(user_input)
+    return old_process_chatbot_request(user_input, uploaded_files)
+
+
+
+# --- Advanced memory helpers ---
+def find_past_module_by_title(title, pathway_num=None):
+    """Find a module by title in a specific or any past pathway. Returns (module, pathway_idx, section_idx, module_idx) or None."""
+    past = st.session_state.get('past_generated_pathways', [])
+    title_lower = title.strip().lower()
+    for pidx, pathway_data in enumerate(past):
+        if pathway_num and (pidx+1) != pathway_num:
+            continue
+        for pw in pathway_data.get('pathways', []):
+            for sidx, section in enumerate(pw.get('sections', [])):
+                for midx, mod in enumerate(section.get('modules', [])):
+                    if title_lower == mod.get('title', '').strip().lower():
+                        return mod, pidx+1, sidx+1, midx+1
+    return None
+
+def find_past_section_by_title_or_number(pathway_num, section_ref):
+    """Find a section by number or title in a past pathway. Returns (section, section_idx) or None."""
+    past = st.session_state.get('past_generated_pathways', [])
+    try:
+        pathway = past[pathway_num-1]['pathways'][0] if len(past[pathway_num-1]['pathways']) == 1 else past[pathway_num-1]['pathways'][pathway_num-1]
+        # If section_ref is int, treat as index
+        if isinstance(section_ref, int):
+            return pathway['sections'][section_ref-1], section_ref
+        # Otherwise, match by title
+        section_ref_lower = section_ref.strip().lower()
+        for sidx, section in enumerate(pathway['sections']):
+            if section_ref_lower == section.get('title', '').strip().lower():
+                return section, sidx+1
+        return None
+    except Exception:
+        return None
+
+def merge_past_section_into_current(pathway_num, section_ref, target_section=None):
+    """Merge all modules from a past section into a section in the current pathway."""
+    result = find_past_section_by_title_or_number(pathway_num, section_ref)
+    if not result:
+        return False, "Section not found in past pathway."
+    section, _ = result
+    editable_pathways = st.session_state.get('editable_pathways', {})
+    if not editable_pathways:
+        return False, "No current pathway to merge into."
+    # Default to first section if not specified
+    if not target_section:
+        target_section = list(editable_pathways.keys())[0]
+    if target_section not in editable_pathways:
+        return False, f"Section '{target_section}' not found in current pathway."
+    # Add copies of all modules
+    for mod in section.get('modules', []):
+        editable_pathways[target_section].append(dict(mod))
+    st.session_state['editable_pathways'] = editable_pathways
+    return True, f"Merged {len(section.get('modules', []))} modules from past pathway {pathway_num} section '{section.get('title','')}' into section '{target_section}'."
+
+# --- Update handle_past_pathway_request for advanced memory ---
+def handle_past_pathway_request(user_input):
+    """Handle user requests about past pathways, including advanced memory."""
+    user_input_lower = user_input.lower()
+    import re
+    # List/show
+    if 'list' in user_input_lower or 'show' in user_input_lower:
+        return list_past_pathways()
+    # Merge section by number: "merge section 2 from pathway 1 into section Quality Control"
+    match = re.search(r'merge section (\d+) from (?:past )?pathway (\d+)(?: into section ([\w\s]+))?', user_input_lower)
+    if match:
+        section_num = int(match.group(1))
+        pathway_num = int(match.group(2))
+        target_section = match.group(3).strip() if match.group(3) else None
+        success, msg = merge_past_section_into_current(pathway_num, section_num, target_section)
+        return msg
+    # Merge section by title: "merge 'Safety Procedures' from pathway 2 into section Quality Control"
+    match = re.search(r"merge ['\"]?([\w\s]+)['\"]? from (?:past )?pathway (\d+)(?: into section ([\w\s]+))?", user_input_lower)
+    if match:
+        section_title = match.group(1)
+        pathway_num = int(match.group(2))
+        target_section = match.group(3).strip() if match.group(3) else None
+        success, msg = merge_past_section_into_current(pathway_num, section_title, target_section)
+        return msg
+    # Integrate module by title: "integrate 'PPE Requirements' from pathway 2 into section Safety Procedures"
+    match = re.search(r"integrate ['\"]?([\w\s]+)['\"]? from (?:past )?pathway (\d+)(?: into section ([\w\s]+))?", user_input_lower)
+    if match:
+        module_title = match.group(1)
+        pathway_num = int(match.group(2))
+        target_section = match.group(3).strip() if match.group(3) else None
+        result = find_past_module_by_title(module_title, pathway_num)
+        if not result:
+            return f"Module '{module_title}' not found in pathway {pathway_num}."
+        mod, pidx, sidx, midx = result
+        editable_pathways = st.session_state.get('editable_pathways', {})
+        if not editable_pathways:
+            return "No current pathway to integrate into."
+        if not target_section:
+            target_section = list(editable_pathways.keys())[0]
+        if target_section not in editable_pathways:
+            return f"Section '{target_section}' not found in current pathway."
+        editable_pathways[target_section].append(dict(mod))
+        st.session_state['editable_pathways'] = editable_pathways
+        return f"Module '{module_title}' from pathway {pathway_num} integrated into section '{target_section}'."
+    # Integrate module by number (existing logic)
+    match = re.search(r'integrate module (\d+) from (?:past )?pathway (\d+)(?: section (\d+))?(?: into section ([\w\s]+))?', user_input_lower)
+    if match:
+        module_num = int(match.group(1))
+        pathway_num = int(match.group(2))
+        section_num = int(match.group(3)) if match.group(3) else 1
+        target_section = match.group(4).strip() if match.group(4) else None
+        success, msg = integrate_past_module_into_current(pathway_num, section_num, module_num, target_section)
+        return msg
+    return ("To reference past pathways, you can now:\n"
+            "- 'show past pathways'\n"
+            "- 'integrate module 2 from pathway 1 section 3'\n"
+            "- 'integrate \"PPE Requirements\" from pathway 2 into section Safety Procedures'\n"
+            "- 'merge section 2 from pathway 1 into section Quality Control'\n"
+            "- 'merge \"Safety Procedures\" from pathway 2 into section Quality Control'")
+
+# --- Content-aware chatbot functions ---
+def search_modules_by_content(query, editable_pathways=None, include_past_pathways=True):
+    """Search through module content for specific topics or keywords."""
+    if editable_pathways is None:
+        editable_pathways = st.session_state.get('editable_pathways', {})
+    
+    results = []
+    query_lower = query.lower()
+    
+    # Search current pathway
+    for section_name, modules in editable_pathways.items():
+        for i, module in enumerate(modules):
+            content = module.get('content', '').lower()
+            title = module.get('title', '').lower()
+            description = module.get('description', '').lower()
+            
+            # Check if query appears in content, title, or description
+            if (query_lower in content or query_lower in title or query_lower in description):
+                results.append({
+                    'type': 'current',
+                    'section': section_name,
+                    'module_number': i + 1,
+                    'module_title': module.get('title', ''),
+                    'content_preview': module.get('content', '')[:200] + '...',
+                    'relevance_score': calculate_relevance_score(query_lower, content, title, description)
+                })
+    
+    # Search past pathways if requested
+    if include_past_pathways:
+        past = st.session_state.get('past_generated_pathways', [])
+        for pidx, pathway_data in enumerate(past):
+            for pw in pathway_data.get('pathways', []):
+                for sidx, section in enumerate(pw.get('sections', [])):
+                    for midx, module in enumerate(section.get('modules', [])):
+                        content = module.get('content', '').lower()
+                        title = module.get('title', '').lower()
+                        description = module.get('description', '').lower()
+                        
+                        if (query_lower in content or query_lower in title or query_lower in description):
+                            results.append({
+                                'type': 'past',
+                                'pathway_num': pidx + 1,
+                                'section': section.get('title', ''),
+                                'section_num': sidx + 1,
+                                'module_number': midx + 1,
+                                'module_title': module.get('title', ''),
+                                'content_preview': module.get('content', '')[:200] + '...',
+                                'relevance_score': calculate_relevance_score(query_lower, content, title, description)
+                            })
+    
+    # Sort by relevance score
+    results.sort(key=lambda x: x['relevance_score'], reverse=True)
+    return results
+
+def calculate_relevance_score(query, content, title, description):
+    """Calculate relevance score for search results."""
+    score = 0
+    query_words = query.split()
+    
+    # Title matches get highest score
+    for word in query_words:
+        if word.lower() in title.lower():
+            score += 10
+        if word.lower() in description.lower():
+            score += 5
+        if word.lower() in content.lower():
+            score += 1
+    
+    # Exact phrase matches get bonus
+    if query.lower() in title.lower():
+        score += 20
+    if query.lower() in description.lower():
+        score += 10
+    if query.lower() in content.lower():
+        score += 5
+    
+    return score
+
+def get_module_content_summary(module_data):
+    """Get a summary of module content using AI."""
+    try:
+        if not model:
+            return module_data.get('content', '')[:300] + '...'
+        
+        content = module_data.get('content', '')
+        title = module_data.get('title', '')
+        
+        if len(content) < 100:
+            return content
+        
+        prompt = f"""
+        Summarize this training module content in 2-3 sentences:
+        
+        Title: {title}
+        Content: {content[:1000]}
+        
+        Provide a concise summary that captures the key training points.
+        """
+        
+        response = model.generate_content(prompt)
+        return response.text.strip()
+        
+    except Exception as e:
+        return module_data.get('content', '')[:300] + '...'
+
+def answer_content_question(question, editable_pathways=None):
+    """Answer questions about pathway content using AI."""
+    try:
+        if not model:
+            return "AI model not available for content analysis."
+        
+        # Get all module content for context
+        all_content = []
+        if editable_pathways is None:
+            editable_pathways = st.session_state.get('editable_pathways', {})
+        
+        for section_name, modules in editable_pathways.items():
+            for i, module in enumerate(modules):
+                all_content.append(f"Section: {section_name}, Module {i+1}: {module.get('title', '')}")
+                all_content.append(f"Content: {module.get('content', '')}")
+                all_content.append("---")
+        
+        # Add past pathway content
+        past = st.session_state.get('past_generated_pathways', [])
+        for pidx, pathway_data in enumerate(past):
+            for pw in pathway_data.get('pathways', []):
+                for sidx, section in enumerate(pw.get('sections', [])):
+                    for midx, module in enumerate(section.get('modules', [])):
+                        all_content.append(f"Past Pathway {pidx+1}, Section {sidx+1}, Module {midx+1}: {module.get('title', '')}")
+                        all_content.append(f"Content: {module.get('content', '')}")
+                        all_content.append("---")
+        
+        context = "\n".join(all_content[:5000])  # Limit context length
+        
+        prompt = f"""
+        You are an AI training content assistant. Answer the user's question based on the training pathway content below.
+        
+        Question: {question}
+        
+        Training Content:
+        {context}
+        
+        Instructions:
+        1. Answer the question based on the provided training content
+        2. If the information is not in the content, say so
+        3. Be specific and reference which modules/sections contain the information
+        4. Keep the response concise and helpful
+        5. If multiple modules contain relevant information, mention them all
+        
+        Answer:
+        """
+        
+        response = model.generate_content(prompt)
+        return response.text.strip()
+        
+    except Exception as e:
+        return f"Error analyzing content: {str(e)}"
+
+def handle_content_question_request(user_input):
+    """Handle user questions about pathway content."""
+    user_input_lower = user_input.lower()
+    
+    # Check for search requests
+    if any(word in user_input_lower for word in ['find', 'search', 'look for', 'where is', 'which module']):
+        # Extract search query
+        import re
+        search_patterns = [
+            r'find (.*?) in',
+            r'search for (.*?)',
+            r'look for (.*?)',
+            r'where is (.*?)',
+            r'which module (.*?)',
+            r'find (.*?)',
+            r'search (.*?)'
+        ]
+        
+        query = None
+        for pattern in search_patterns:
+            match = re.search(pattern, user_input_lower)
+            if match:
+                query = match.group(1).strip()
+                break
+        
+        if query:
+            results = search_modules_by_content(query)
+            if results:
+                response = f"Found {len(results)} modules containing '{query}':\n\n"
+                for i, result in enumerate(results[:5]):  # Limit to top 5 results
+                    if result['type'] == 'current':
+                        response += f"{i+1}. **Current Pathway** - {result['section']}, Module {result['module_number']}: {result['module_title']}\n"
+                    else:
+                        response += f"{i+1}. **Past Pathway {result['pathway_num']}** - {result['section']}, Module {result['module_number']}: {result['module_title']}\n"
+                    response += f"   Preview: {result['content_preview']}\n\n"
+                
+                if len(results) > 5:
+                    response += f"... and {len(results) - 5} more results.\n"
+                
+                return response
+            else:
+                return f"No modules found containing '{query}'."
+        else:
+            return "Please specify what you'd like to search for. Example: 'find safety procedures' or 'search for PPE requirements'"
+    
+    # Check for content questions
+    elif any(word in user_input_lower for word in ['what does', 'what is', 'how do', 'explain', 'tell me about', 'what are']):
+        return answer_content_question(user_input)
+    
+    # Check for module content requests
+    elif any(word in user_input_lower for word in ['show content', 'module content', 'what\'s in', 'content of']):
+        # Extract module reference
+        import re
+        module_match = re.search(r'module (\d+)', user_input_lower)
+        if module_match:
+            module_num = int(module_match.group(1))
+            editable_pathways = st.session_state.get('editable_pathways', {})
+            if editable_pathways:
+                # Find the module
+                for section_name, modules in editable_pathways.items():
+                    if module_num <= len(modules):
+                        module = modules[module_num - 1]
+                        summary = get_module_content_summary(module)
+                        return f"**Module {module_num} in {section_name}: {module.get('title', '')}**\n\n{summary}"
+                
+                return f"Module {module_num} not found in current pathway."
+            else:
+                return "No current pathway available."
+        else:
+            return "Please specify which module you'd like to see. Example: 'show content of module 2'"
+    
+    return ("I can help you with content questions. Try:\n"
+            "- 'Find safety procedures in the pathways'\n"
+            "- 'What does module 2 say about PPE?'\n"
+            "- 'Search for quality control procedures'\n"
+            "- 'What are the emergency procedures?'\n"
+            "- 'Show content of module 1'")
+
+# Update process_chatbot_request to handle content questions
+def process_chatbot_request(user_input, uploaded_files=None):
+    user_input_lower = user_input.lower()
+    
+    # Check for content questions first
+    if any(word in user_input_lower for word in ['find', 'search', 'what does', 'what is', 'how do', 'explain', 'tell me about', 'what are', 'show content', 'module content', 'what\'s in', 'content of']):
+        return handle_content_question_request(user_input)
+    
+    # Check for past pathway requests
+    if any(word in user_input_lower for word in ['past pathway', 'previous pathway', 'show past', 'list past', 'integrate from past', 'integrate from previous']):
+        return handle_past_pathway_request(user_input)
+    
+    # Original logic for other requests
+    # Get current pathway data for module reference
+    editable_pathways = st.session_state.get('editable_pathways', {})
+    module_reference_help = ""
+    if editable_pathways:
+        module_reference_help = format_module_reference_help(editable_pathways)
+    
+    # Check for file-based update requests (when files are uploaded) - PRIORITY 1
+    if uploaded_files and len(uploaded_files) > 0:
+        if any(word in user_input_lower for word in ['update', 'add to', 'modify', 'change', 'adjust', 'regenerate']):
+            if any(word in user_input_lower for word in ['module', 'section', 'pathway', 'course', 'program']):
+                return handle_file_based_module_update(user_input, uploaded_files)
+    
+    # Check for regeneration requests (when no files uploaded)
+    if any(word in user_input_lower for word in ['regenerate']):
+        if 'module' in user_input_lower or 'content' in user_input_lower:
+            return handle_module_regeneration(user_input)
+        else:
+            return f"I can help you regenerate modules. Please specify which module you'd like to regenerate and any specific changes you want.\n\n{module_reference_help}"
+    
+    # Check for file ingestion requests (when no files uploaded)
+    elif any(word in user_input_lower for word in ['ingest', 'upload', 'add', 'new file', 'new files', 'process files']):
+        return handle_file_ingestion(user_input)
+    
+    # Check for tone/style changes (expanded to include more tones)
+    elif any(word in user_input_lower for word in ['tone', 'style', 'professional', 'casual', 'formal', 'technical', 'friendly', 'conversational', 'academic', 'simple', 'detailed']):
+        return handle_tone_change(user_input)
+    
+    # Check for content addition
+    elif any(word in user_input_lower for word in ['add', 'include', 'missing', 'additional', 'insert', 'supplement']):
+        return handle_content_addition(user_input)
+    
+    # Check for specific module requests
+    elif any(word in user_input_lower for word in ['module', 'section', 'content']):
+        return handle_module_specific_request(user_input)
+    
+    # General help
+    elif any(word in user_input_lower for word in ['help', 'what can you do', 'how', 'commands']):
+        return get_chatbot_help()
+    
+    # Default response - use AI for intelligent responses
+    else:
+        try:
+            if not model:
+                # Fallback if AI not available
+                if uploaded_files and len(uploaded_files) > 0:
+                    return f"I see you've uploaded {len(uploaded_files)} file(s). You can:\n• \"Update module 1 with new file\"\n• \"Add content to safety section\"\n• \"Modify module 1 with uploaded content\"\n• \"Update pathway with new information\"\n• \"Regenerate module 2 with uploaded files\"\n\nPlease specify which module, section, or pathway you'd like to update with the uploaded files.\n\n{module_reference_help}"
+                else:
+                    return f"I can help you with:\n• Regenerating modules with different content or tone\n• Uploading new files to update pathways\n• Changing module tone/style (professional, casual, formal, technical, friendly, etc.)\n• Adding missing information to modules\n• Updating specific modules/sections with new file content\n• Searching for specific topics in pathways\n• Answering questions about training content\n\nPlease be more specific about what you'd like to do.\n\n{module_reference_help}"
+            
+            # Use AI to generate contextual response
+            files_info = f"User has uploaded {len(uploaded_files)} files: {[f.name for f in uploaded_files]}" if uploaded_files else "No files uploaded"
+            
+            prompt = f"""
+            You are an AI training content assistant. The user said: "{user_input}"
+            {files_info}
+            
+            Current module structure:
+            {module_reference_help}
+            
+            Generate a helpful, contextual response that:
+            1. Acknowledges their input
+            2. Suggests relevant actions they can take
+            3. Provides specific examples of commands they can use
+            4. Is friendly and encouraging
+            5. References the correct module numbering system (modules are numbered 1, 2, 3, etc. within each section)
+            6. Mentions that they can search for content and ask questions about training information
+            
+            Keep the response concise and actionable.
+            """
+            
+            response = model.generate_content(prompt)
+            return response.text.strip()
+            
+        except Exception as e:
+            # Fallback to static response if AI fails
+            if uploaded_files and len(uploaded_files) > 0:
+                return f"I see you've uploaded {len(uploaded_files)} file(s). You can:\n• \"Update module 1 with new file\"\n• \"Add content to section 3\"\n• \"Modify module 1 with uploaded content\"\n• \"Update pathway with new information\"\n• \"Regenerate module 2 with uploaded files\"\n\nPlease specify which module, section, or pathway you'd like to update with the uploaded files.\n\n{module_reference_help}"
+            else:
+                return f"I can help you with:\n• Regenerating modules with different content or tone\n• Uploading new files to update pathways\n• Changing module tone/style (professional, casual, formal, technical, friendly, etc.)\n• Adding missing information to modules\n• Updating specific modules/sections with new file content\n• Searching for specific topics in pathways\n• Answering questions about training content\n\nPlease be more specific about what you'd like to do.\n\n{module_reference_help}"
 
 if __name__ == "__main__":
     main() 

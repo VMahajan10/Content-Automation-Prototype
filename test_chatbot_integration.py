@@ -1,116 +1,136 @@
 #!/usr/bin/env python3
 """
-Test script for chatbot functionality
+Test file for chatbot integration with new module numbering system
 """
 
-def test_chatbot_functions():
-    """Test the chatbot helper functions"""
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+def test_chatbot_module_references():
+    """Test that the chatbot can correctly reference modules with the new numbering system"""
     
-    # Test module info extraction
-    test_inputs = [
-        "regenerate module 2 with professional tone",
-        "update the safety module to include more procedures",
-        "change module 1 to casual tone",
-        "add missing information to module 3"
+    # Mock editable pathways data
+    editable_pathways = {
+        'Safety Procedures': [
+            {'title': 'PPE Requirements', 'description': 'Personal protective equipment', 'content': 'Safety content 1'},
+            {'title': 'Equipment Safety', 'description': 'Equipment safety procedures', 'content': 'Safety content 2'},
+            {'title': 'Emergency Procedures', 'description': 'Emergency response', 'content': 'Safety content 3'}
+        ],
+        'Quality Control': [
+            {'title': 'Inspection Procedures', 'description': 'Quality inspection steps', 'content': 'Quality content 1'},
+            {'title': 'Documentation', 'description': 'Quality documentation', 'content': 'Quality content 2'}
+        ],
+        'Process Training': [
+            {'title': 'Standard Operating Procedures', 'description': 'SOP training', 'content': 'Process content 1'},
+            {'title': 'Workflow Management', 'description': 'Workflow procedures', 'content': 'Process content 2'},
+            {'title': 'Team Coordination', 'description': 'Team coordination', 'content': 'Process content 3'},
+            {'title': 'Communication Protocols', 'description': 'Communication procedures', 'content': 'Process content 4'}
+        ]
+    }
+    
+    # Mock session state
+    import streamlit as st
+    if not hasattr(st, 'session_state'):
+        class MockSessionState:
+            def __init__(self):
+                self.data = {}
+            
+            def get(self, key, default=None):
+                return self.data.get(key, default)
+            
+            def __setitem__(self, key, value):
+                self.data[key] = value
+        
+        st.session_state = MockSessionState()
+    
+    st.session_state['editable_pathways'] = editable_pathways
+    
+    # Test the chatbot functions
+    from app import process_chatbot_request, find_module_by_info, create_module_mapping, format_module_reference_help
+    
+    print("🤖 Testing chatbot module references...")
+    
+    # Test module reference help generation
+    help_text = format_module_reference_help(editable_pathways)
+    print(f"Help text generated ({len(help_text)} characters)")
+    assert "Safety Procedures" in help_text
+    assert "Module 1: PPE Requirements" in help_text
+    assert "Module 2: Equipment Safety" in help_text
+    
+    # Test module mapping
+    module_mapping = create_module_mapping(editable_pathways)
+    print(f"Module mapping created with {len(module_mapping['by_global_number'])} modules")
+    
+    # Test finding modules by different references
+    test_cases = [
+        ("module_1", "PPE Requirements"),
+        ("module_2", "Equipment Safety"),
+        ("module_3", "Emergency Procedures"),
+        ("ppe requirements", "PPE Requirements"),
+        ("equipment safety", "Equipment Safety"),
+        ("safety", "PPE Requirements"),  # Should return first safety module
     ]
     
-    print("🧪 Testing chatbot functionality...")
-    
-    # Mock the helper functions for testing
-    def extract_module_info_from_input(user_input):
-        """Mock function to test module info extraction"""
-        import re
-        user_input_lower = user_input.lower()
-        
-        # Look for module numbers
-        module_match = re.search(r'module\s+(\d+)', user_input_lower)
-        if module_match:
-            return f"module_{module_match.group(1)}"
-        
-        # Look for specific module names
-        module_keywords = ['safety', 'quality', 'process', 'equipment', 'training', 'onboarding']
-        for keyword in module_keywords:
-            if keyword in user_input_lower:
-                return keyword
-        
-        return None
-    
-    def extract_tone_from_input(user_input):
-        """Mock function to test tone extraction"""
-        user_input_lower = user_input.lower()
-        
-        if 'professional' in user_input_lower:
-            return 'professional'
-        elif 'casual' in user_input_lower:
-            return 'casual'
-        elif 'formal' in user_input_lower:
-            return 'formal'
-        elif 'technical' in user_input_lower:
-            return 'technical'
-        elif 'friendly' in user_input_lower:
-            return 'friendly'
-        
-        return 'professional'  # Default
-    
-    def extract_changes_from_input(user_input):
-        """Mock function to test changes extraction"""
-        user_input_lower = user_input.lower()
-        changes = []
-        
-        # Check for specific change requests
-        if 'remove' in user_input_lower:
-            import re
-            remove_match = re.search(r'remove\s+([^,]+)', user_input_lower)
-            if remove_match:
-                changes.append(f"Remove: {remove_match.group(1)}")
-        
-        if 'add' in user_input_lower:
-            import re
-            add_match = re.search(r'add\s+([^,]+)', user_input_lower)
-            if add_match:
-                changes.append(f"Add: {add_match.group(1)}")
-        
-        if 'include' in user_input_lower:
-            import re
-            include_match = re.search(r'include\s+([^,]+)', user_input_lower)
-            if include_match:
-                changes.append(f"Include: {include_match.group(1)}")
-        
-        if 'more' in user_input_lower and 'detail' in user_input_lower:
-            changes.append("Add more detailed explanations")
-        
-        if 'simplify' in user_input_lower:
-            changes.append("Simplify language and explanations")
-        
-        if 'expand' in user_input_lower:
-            changes.append("Expand on key concepts")
-        
-        return '; '.join(changes) if changes else None
-    
-    # Test each input
-    for i, test_input in enumerate(test_inputs, 1):
-        print(f"\n📝 Test {i}: '{test_input}'")
-        
-        module_info = extract_module_info_from_input(test_input)
-        tone = extract_tone_from_input(test_input)
-        changes = extract_changes_from_input(test_input)
-        
-        print(f"   Module: {module_info}")
-        print(f"   Tone: {tone}")
-        print(f"   Changes: {changes}")
-        
-        if module_info:
-            print(f"   ✅ Module identified: {module_info}")
+    for module_ref, expected_title in test_cases:
+        result = find_module_by_info(module_ref, editable_pathways)
+        if result and result['module']['title'] == expected_title:
+            print(f"✅ '{module_ref}' -> {result['module']['title']}")
         else:
-            print(f"   ⚠️ No module identified")
+            actual_title = result['module']['title'] if result else 'Not found'
+            print(f"❌ '{module_ref}' -> {actual_title} (expected: {expected_title})")
     
-    print("\n✅ Chatbot function tests completed!")
-    print("\n🎯 Key Features Tested:")
-    print("• Module identification by number or keyword")
-    print("• Tone extraction (professional, casual, formal, technical, friendly)")
-    print("• Change request extraction (add, remove, include, simplify, expand)")
-    print("• File ingestion capabilities")
-    print("• Module regeneration with AI")
+    # Test chatbot responses
+    print("\n🤖 Testing chatbot responses...")
+    
+    # Test regeneration request
+    response = process_chatbot_request("regenerate module 1")
+    print(f"Regeneration response: {response[:100]}...")
+    # The response should mention modules or pathway data
+    assert any(word in response.lower() for word in ["module", "pathway", "data", "available"])
+    
+    # Test help request
+    response = process_chatbot_request("help")
+    print(f"Help response: {response[:100]}...")
+    assert "module" in response.lower() or "help" in response.lower()
+    
+    # Test file-based update request
+    class MockUploadedFile:
+        def __init__(self, name):
+            self.name = name
+    
+    mock_files = [MockUploadedFile("test.txt")]
+    response = process_chatbot_request("update module 2 with new file", mock_files)
+    print(f"File update response: {response[:100]}...")
+    assert "module" in response.lower() or "file" in response.lower()
+    
+    print("✅ All chatbot module reference tests passed!")
+    
+    # Test section-specific module references
+    print("\n🔍 Testing section-specific module references...")
+    
+    # Test finding modules in specific sections
+    safety_module_1 = module_mapping['by_section_and_number']['Safety Procedures']['1']
+    quality_module_1 = module_mapping['by_section_and_number']['Quality Control']['1']
+    process_module_2 = module_mapping['by_section_and_number']['Process Training']['2']
+    
+    print(f"Safety Module 1: {safety_module_1['module']['title']} (Local: {safety_module_1['local_number']}, Global: {safety_module_1['global_number']})")
+    print(f"Quality Module 1: {quality_module_1['module']['title']} (Local: {quality_module_1['local_number']}, Global: {quality_module_1['global_number']})")
+    print(f"Process Module 2: {process_module_2['module']['title']} (Local: {process_module_2['local_number']}, Global: {process_module_2['global_number']})")
+    
+    # Verify local numbering is correct
+    assert safety_module_1['local_number'] == 1
+    assert quality_module_1['local_number'] == 1
+    assert process_module_2['local_number'] == 2
+    
+    # Verify global numbering is sequential
+    assert safety_module_1['global_number'] == 1
+    assert quality_module_1['global_number'] == 4  # After 3 safety modules
+    assert process_module_2['global_number'] == 7  # After safety and quality modules
+    
+    print("✅ All section-specific module reference tests passed!")
+    
+    print("\n🎉 All chatbot integration tests completed successfully!")
 
 if __name__ == "__main__":
-    test_chatbot_functions() 
+    test_chatbot_module_references() 

@@ -1585,7 +1585,7 @@ def create_pathway_chatbot_popup(context="main"):
     # Always use a floating popup on the right, never sidebar
     if context == "floating":
         # No custom CSS needed for sidebar approach
-
+        
         # Render the popup only if chatbot_visible is True
         if st.session_state.get("chatbot_visible", False):
             # Use sidebar for floating effect
@@ -2012,7 +2012,7 @@ def get_chatbot_help():
         if editable_pathways:
             module_reference_help = format_module_reference_help(editable_pathways)
         
-        return (
+    return (
             f"**AI Pathway Assistant Help**\n\n"
             f"{module_reference_help}\n\n"
             "**Content Search & Questions (NEW):**\n"
@@ -2028,55 +2028,55 @@ def get_chatbot_help():
             "- \"Integrate 'PPE Requirements' from pathway 2 into section Safety Procedures\"\n"
             "- \"Merge section 2 from pathway 1 into section Quality Control\"\n"
             "- \"Merge 'Safety Procedures' from pathway 2 into section Quality Control\"\n\n"
-            "**Module Regeneration Commands:**\n"
+        "**Module Regeneration Commands:**\n"
             "- \"Regenerate module 1 with professional tone\"\n"
             "- \"Update module 2 to include more procedures\"\n"
-            "- \"Change module 1 to casual tone and add troubleshooting steps\"\n"
-            "- \"Regenerate module 3 to remove technical jargon\"\n"
-            "- \"Update module 1 to include more safety procedures\"\n\n"
-            "**File-Based Update Commands:**\n"
-            "- \"Update module 2 with new file\" (upload file first)\n"
-            "- \"Add content to safety section\" (upload file first)\n"
-            "- \"Update pathway with new information\" (upload file first)\n"
-            "- \"Modify module 1 with uploaded content\" (upload file first)\n\n"
-            "**File Ingestion Commands:**\n"
-            "- \"Ingest new files\"\n"
-            "- \"Upload additional training materials\"\n"
-            "- \"Add new content from files\"\n\n"
-            "**Content Modification Commands:**\n"
-            "- \"Add missing information to module 3\"\n"
-            "- \"Include more detailed procedures in module 2\"\n"
-            "- \"Simplify the language in module 1\"\n"
-            "- \"Add troubleshooting tips to the equipment module\"\n\n"
-            "**File Upload:**\n"
-            "- Use the file upload section in the sidebar to add new files\n"
-            "- Supported formats: PDF, DOC, DOCX, TXT, MP4, AVI, MOV\n"
-            "- Files will be automatically processed and integrated\n"
-            "- Upload files, then type commands to update specific modules/sections\n\n"
-            "**Available Tones:**\n"
-            "- Professional - Formal business language\n"
-            "- Casual - Friendly, conversational tone\n"
-            "- Formal - Academic or technical tone\n"
-            "- Technical - Detailed technical explanations\n"
-            "- Friendly - Warm, approachable tone\n"
-            "- Conversational - Natural, dialogue-like\n"
-            "- Academic - Scholarly, research-based\n"
-            "- Simple - Easy-to-understand language\n"
-            "- Detailed - Comprehensive explanations\n\n"
+        "- \"Change module 1 to casual tone and add troubleshooting steps\"\n"
+        "- \"Regenerate module 3 to remove technical jargon\"\n"
+        "- \"Update module 1 to include more safety procedures\"\n\n"
+        "**File-Based Update Commands:**\n"
+        "- \"Update module 2 with new file\" (upload file first)\n"
+        "- \"Add content to safety section\" (upload file first)\n"
+        "- \"Update pathway with new information\" (upload file first)\n"
+        "- \"Modify module 1 with uploaded content\" (upload file first)\n\n"
+        "**File Ingestion Commands:**\n"
+        "- \"Ingest new files\"\n"
+        "- \"Upload additional training materials\"\n"
+        "- \"Add new content from files\"\n\n"
+        "**Content Modification Commands:**\n"
+        "- \"Add missing information to module 3\"\n"
+        "- \"Include more detailed procedures in module 2\"\n"
+        "- \"Simplify the language in module 1\"\n"
+        "- \"Add troubleshooting tips to the equipment module\"\n\n"
+        "**File Upload:**\n"
+        "- Use the file upload section in the sidebar to add new files\n"
+        "- Supported formats: PDF, DOC, DOCX, TXT, MP4, AVI, MOV\n"
+        "- Files will be automatically processed and integrated\n"
+        "- Upload files, then type commands to update specific modules/sections\n\n"
+        "**Available Tones:**\n"
+        "- Professional - Formal business language\n"
+        "- Casual - Friendly, conversational tone\n"
+        "- Formal - Academic or technical tone\n"
+        "- Technical - Detailed technical explanations\n"
+        "- Friendly - Warm, approachable tone\n"
+        "- Conversational - Natural, dialogue-like\n"
+        "- Academic - Scholarly, research-based\n"
+        "- Simple - Easy-to-understand language\n"
+        "- Detailed - Comprehensive explanations\n\n"
             "**Module Numbering:**\n"
             "- Modules are numbered locally within each section (1, 2, 3, etc.)\n"
             "- \"Module 1\" refers to the first module in the current section\n"
             "- \"Module 2 in safety section\" refers to the second module in the safety section\n"
             "- You can also reference modules by title or keywords\n\n"
-            "**Tips:**\n"
-            "- Be specific about which module you want to modify\n"
-            "- Mention what content you want to add, remove, or change\n"
-            "- Specify the tone/style you want\n"
-            "- Upload files through the sidebar file uploader\n"
-            "- Use \"Clear Chat\" to start fresh conversations\n"
+        "**Tips:**\n"
+        "- Be specific about which module you want to modify\n"
+        "- Mention what content you want to add, remove, or change\n"
+        "- Specify the tone/style you want\n"
+        "- Upload files through the sidebar file uploader\n"
+        "- Use \"Clear Chat\" to start fresh conversations\n"
             "- **NEW:** Search for topics and ask questions about training content\n"
             "- **NEW:** Integrate modules/sections from past pathways"
-        )
+    )
 
 def extract_module_info_from_input(user_input):
     """
@@ -2193,8 +2193,8 @@ def find_module_by_info(module_info, editable_pathways):
     module_mapping = create_module_mapping(editable_pathways)
     
     # Check for module number references (e.g., "module 2")
-    if module_info.startswith('module_'):
-        module_num = module_info.split('_')[1]
+            if module_info.startswith('module_'):
+                module_num = module_info.split('_')[1]
         
         # First try to find by global number
         if module_num in module_mapping['by_global_number']:
@@ -2205,8 +2205,8 @@ def find_module_by_info(module_info, editable_pathways):
         for section_name, section_modules in module_mapping['by_section_and_number'].items():
             if module_num in section_modules:
                 return section_modules[module_num]
-    
-    # Check by module title/keywords
+            
+            # Check by module title/keywords
     module_info_lower = module_info.lower()
     for title, module_data in module_mapping['by_title'].items():
         if module_info_lower in title or title in module_info_lower:
@@ -2493,7 +2493,7 @@ def process_new_files(uploaded_files):
             return True
         else:
             # Even if no modules were created, the files were processed successfully
-            return True
+        return True
         
     except Exception as e:
         st.error(f"❌ Error processing new files: {str(e)}")
@@ -2993,14 +2993,14 @@ def update_specific_module(module_identifier, new_content_modules, editable_path
         # Apply action (replace or merge)
         if action == 'replace':
             # Replace the entire module content
-            updated_module = target_module['module'].copy()
-            updated_module['content'] = best_content['content']
-            updated_module['description'] = best_content['description']
-            updated_module['source'] = best_content['source']
-            updated_module['content_types'] = best_content.get('content_types', [])
-            
-            # Update in pathway
-            editable_pathways[target_module['section']][target_module['index']] = updated_module
+        updated_module = target_module['module'].copy()
+        updated_module['content'] = best_content['content']
+        updated_module['description'] = best_content['description']
+        updated_module['source'] = best_content['source']
+        updated_module['content_types'] = best_content.get('content_types', [])
+        
+        # Update in pathway
+        editable_pathways[target_module['section']][target_module['index']] = updated_module
             
             action_text = "replaced"
         elif action == 'merge':
@@ -3057,36 +3057,36 @@ def update_specific_section(section_identifier, new_content_modules, editable_pa
                 return f"❌ Invalid section number. Available sections: {list(range(1, len(editable_pathways.keys()) + 1))}"
         else:
             # Handle named sections (e.g., "safety", "quality")
-            for section_name in editable_pathways.keys():
-                if section_identifier.lower() in section_name.lower():
-                    target_section = section_name
-                    break
+        for section_name in editable_pathways.keys():
+            if section_identifier.lower() in section_name.lower():
+                target_section = section_name
+                break
         
         if not target_section:
             return f"❌ Could not find section matching '{section_identifier}'. Available sections: {list(editable_pathways.keys())}"
         
         if action == 'add':
-            # Add new modules to the section
-            added_count = 0
-            for new_module in new_content_modules:
-                # Check if this module is relevant to the section
-                if is_module_relevant_to_section(new_module, target_section):
-                    editable_pathways[target_section].append({
-                        'title': new_module['title'],
-                        'description': new_module['description'],
-                        'content': new_module['content'],
-                        'source': new_module.get('source', ['New file content']),
-                        'content_types': new_module.get('content_types', [])
-                    })
-                    added_count += 1
-            
-            if added_count == 0:
-                return f"❌ No relevant content found for section '{target_section}'."
-            
-            # Update session state
-            st.session_state['editable_pathways'] = editable_pathways
-            
-            return f"✅ Successfully added {added_count} new modules to section '{target_section}'!"
+        # Add new modules to the section
+        added_count = 0
+        for new_module in new_content_modules:
+            # Check if this module is relevant to the section
+            if is_module_relevant_to_section(new_module, target_section):
+                editable_pathways[target_section].append({
+                    'title': new_module['title'],
+                    'description': new_module['description'],
+                    'content': new_module['content'],
+                    'source': new_module.get('source', ['New file content']),
+                    'content_types': new_module.get('content_types', [])
+                })
+                added_count += 1
+        
+        if added_count == 0:
+            return f"❌ No relevant content found for section '{target_section}'."
+        
+        # Update session state
+        st.session_state['editable_pathways'] = editable_pathways
+        
+        return f"✅ Successfully added {added_count} new modules to section '{target_section}'!"
         
         elif action in ['replace', 'merge']:
             # Update existing modules in the section

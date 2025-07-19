@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Gateway Content Automation - Startup Script
 This script ensures the backend server is running and starts the Streamlit app.

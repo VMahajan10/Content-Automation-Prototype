@@ -20,8 +20,6 @@ import subprocess
 import threading
 import atexit
 import io
-import uuid
-import hashlib
 try:
     import ffmpeg
 except ImportError:
@@ -157,51 +155,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Global widget key registry to prevent duplicates
-WIDGET_KEY_REGISTRY = set()
-
-def generate_unique_widget_key(base_key, content_hash=None):
-    """
-    Generate a guaranteed unique widget key for Streamlit components
-    Prevents DuplicateWidgetID errors by using UUID and content hashing
-    """
-    try:
-        # Sanitize the base key
-        sanitized_base = re.sub(r'[^a-zA-Z0-9_]', '_', str(base_key))
-        
-        # Create content-based hash if content provided
-        if content_hash:
-            content_id = hashlib.md5(str(content_hash).encode()).hexdigest()[:8]
-        else:
-            content_id = str(uuid.uuid4())[:8]
-        
-        # Generate unique key with timestamp component
-        timestamp = int(time.time() * 1000000) % 1000000  # Last 6 digits of microsecond timestamp
-        unique_key = f"{sanitized_base}_{content_id}_{timestamp}"
-        
-        # Ensure absolute uniqueness by checking registry
-        counter = 0
-        original_key = unique_key
-        while unique_key in WIDGET_KEY_REGISTRY:
-            counter += 1
-            unique_key = f"{original_key}_{counter}"
-        
-        # Register the key
-        WIDGET_KEY_REGISTRY.add(unique_key)
-        
-        return unique_key
-        
-    except Exception as e:
-        # Fallback to pure UUID if anything fails
-        fallback_key = f"widget_{uuid.uuid4().hex[:12]}"
-        WIDGET_KEY_REGISTRY.add(fallback_key)
-        return fallback_key
-
-def clear_widget_key_registry():
-    """Clear the widget key registry - useful for testing or reset"""
-    global WIDGET_KEY_REGISTRY
-    WIDGET_KEY_REGISTRY.clear()
-
 # Main application
 def main():
     # Initialize session state variables
@@ -323,9 +276,13 @@ def show_home_page():
         }
         
         # Generate the mind map
-        # Note: create_mindmeister_ai_mind_map function needs to be implemented
-        st.info("Mind map generation feature is under development")
-        result = None
+        result = create_mindmeister_ai_mind_map(
+            sample_training_context,
+            sample_file_inventory,
+            sample_collaboration_info,
+            sample_mind_map_info,
+            "Sample onboarding content and procedures"
+        )
         
         if result and result.get('success'):
             st.success("✅ Test mind map created successfully!")
@@ -797,17 +754,14 @@ def show_training_discovery_page():
                             tmp_audio.write(uploaded_file.getvalue())
                             tmp_audio_path = tmp_audio.name
                         # Transcribe with Gemini
-                                                    # Note: Using the model from modules.config instead of direct import
-                            from modules.config import model
-                            if model:
-                                with open(tmp_audio_path, 'rb') as audio_file:
-                                    response = model.generate_content([
-                                        "Generate a transcript of the speech.",
-                                        {"mime_type": "audio/wav", "data": audio_file.read()}
-                                    ])
-                                    file_text = response.text
-                            else:
-                                file_text = "[AI model not available for transcription]"
+                        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+                        model = genai.GenerativeModel('gemini-2.0-flash-exp')
+                        with open(tmp_audio_path, 'rb') as audio_file:
+                            response = model.generate_content([
+                                "Generate a transcript of the speech.",
+                                {"mime_type": "audio/wav", "data": audio_file.read()}
+                            ])
+                        file_text = response.text
                         os.unlink(tmp_audio_path)
                     except Exception as e:
                         file_text = f"[Error transcribing audio: {e}]"
@@ -830,17 +784,14 @@ def show_training_discovery_page():
                                 .run(quiet=True)
                             )
                             # Transcribe with Gemini
-                            # Note: Using the model from modules.config instead of direct import
-                            from modules.config import model
-                            if model:
-                                with open(tmp_audio_path, 'rb') as audio_file:
-                                    response = model.generate_content([
-                                        "Generate a transcript of the speech.",
-                                        {"mime_type": "audio/wav", "data": audio_file.read()}
-                                    ])
-                                    file_text = response.text
-                            else:
-                                file_text = "[AI model not available for transcription]"
+                            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+                            model = genai.GenerativeModel('gemini-2.0-flash-exp')
+                            with open(tmp_audio_path, 'rb') as audio_file:
+                                response = model.generate_content([
+                                    "Generate a transcript of the speech.",
+                                    {"mime_type": "audio/wav", "data": audio_file.read()}
+                                ])
+                            file_text = response.text
                             os.unlink(tmp_video_path)
                             os.unlink(tmp_audio_path)
                         except Exception as e:
@@ -1073,8 +1024,8 @@ def show_training_discovery_page():
         
         with col1:
             quick_test_mode = st.checkbox(
-                "Quick AI Mode (streamlined processing)",
-                help="Uses AI agents with optimized settings for faster generation while maintaining quality"
+                "Quick Test Mode (skip AI analysis for speed)",
+                help="For testing purposes - skips AI analysis and uses basic content extraction for maximum speed"
             )
         
         with col2:
@@ -1097,32 +1048,31 @@ def show_training_discovery_page():
                 st.write(f"Number of files with content: {len([c for c in extracted_file_contents.values() if c and len(c.strip()) > 50])}")
                 
                 if quick_test_mode:
-                    st.info("⚡ **Quick AI Mode Enabled**")
-                    st.write("• Using streamlined AI agents for speed")
-                    st.write("• Optimized content processing")
-                    st.write("• Estimated time: 15-30 seconds")
+                    st.info("⚡ **Quick Test Mode Enabled**")
+                    st.write("• Skipping AI analysis for maximum speed")
+                    st.write("• Using basic content extraction")
+                    st.write("• Estimated time: 5-10 seconds")
                     
-                    with st.spinner("⚡ Quick AI pathway generation..."):
+                    with st.spinner("⚡ Quick processing (bypassing AI analysis)..."):
                         try:
-                            from modules.utils import gemini_generate_complete_pathway
-                            st.write("🤖 Using AI agents in quick mode...")
+                            from modules.utils import create_quick_pathway
+                            st.write("📞 Creating quick pathway...")
                             
-                            # Use AI agents even in quick mode
-                            generated_pathways_data = gemini_generate_complete_pathway(context, extracted_file_contents, inventory, bypass_filtering=False, preserve_original_content=False)
+                            generated_pathways_data = create_quick_pathway(context, extracted_file_contents, inventory)
                             
                             # Flush any debug logs from background threads
                             flush_debug_logs_to_streamlit()
                             
-                            st.write(f"📋 AI Response: Generated {len(generated_pathways_data.get('pathways', [])) if generated_pathways_data else 0} pathways")
+                            st.write(f"📋 Quick Response: {generated_pathways_data}")
                             
                             if generated_pathways_data:
                                 st.session_state['generated_pathway'] = generated_pathways_data
-                                st.success("✅ Quick AI pathway generated successfully!")
+                                st.success("✅ Quick pathway generated successfully!")
                                 st.rerun()
                             else:
-                                st.error("❌ Quick AI pathway generation failed")
+                                st.error("❌ Quick pathway generation failed")
                         except Exception as e:
-                            st.error(f"❌ Quick AI pathway error: {str(e)}")
+                            st.error(f"❌ Quick pathway error: {str(e)}")
                             st.session_state['ai_errors'] = {
                                 'error': str(e),
                                 'type': type(e).__name__,
@@ -1167,7 +1117,7 @@ def show_training_discovery_page():
                             status_text.text("🚀 Starting AI pathway generation...")
                             progress_bar.progress(10)
                             
-                            generated_pathways_data = gemini_generate_complete_pathway(context, extracted_file_contents, inventory, bypass_filtering=bypass_filtering, preserve_original_content=preserve_original_content)
+                            generated_pathways_data = gemini_generate_complete_pathway(context, extracted_file_contents, inventory, bypass_filtering=bypass_filtering, preserve_original_content=preserve_original_content, enhanced_content=enhanced_content_mode)
                             
                             # Flush any debug logs from background threads
                             flush_debug_logs_to_streamlit()
@@ -1231,10 +1181,10 @@ def show_training_discovery_page():
             if '429' in st.session_state['ai_errors']['error'] or 'quota' in st.session_state['ai_errors']['error'].lower():
                 st.warning("⚠️ **API Rate Limit Hit**")
                 st.write("You've exceeded your Gemini API daily quota. Try these options:")
+                st.write("• **Use Quick Test Mode** (checkbox above) - works without AI")
                 st.write("• **Wait 24 hours** for quota reset")
                 st.write("• **Upgrade your Gemini API plan** for higher limits")
                 st.write("• **Check your billing** at https://ai.google.dev/")
-                st.write("• **Try again later** when quota resets")
             
             if st.button("🗑️ Clear Error Log"):
                 del st.session_state['ai_errors']
@@ -1366,81 +1316,25 @@ def show_training_discovery_page():
         # Show chatbot popup if visible
         if st.session_state.chatbot_visible:
             create_pathway_chatbot_popup("floating")
-        # --- Convert pathway to editable format with data persistence ---
+        # --- Convert pathway to editable format ---
         if 'editable_pathways' not in st.session_state or st.session_state.get('editable_pathways_pathway_idx', -1) != st.session_state['selected_pathway_idx']:
             editable_pathways = {}
-            
-            # Debug: Check the source pathway data
-            print(f"🔍 Converting pathway {st.session_state['selected_pathway_idx']} to editable format")
-            print(f"📊 Source pathway has {len(selected_pathway.get('sections', []))} sections")
-            
-            # Ensure we're using the most up-to-date pathway data from session state
-            # This prevents loss of enhanced modules during pathway switching
-            source_pathway_data = st.session_state.get('generated_pathway', {})
-            if source_pathway_data and 'pathways' in source_pathway_data:
-                current_pathways = source_pathway_data['pathways']
-                if st.session_state['selected_pathway_idx'] < len(current_pathways):
-                    selected_pathway = current_pathways[st.session_state['selected_pathway_idx']]
-                    print(f"🔄 Using updated pathway data from session state")
-            
-            # Ensure selected_pathway has sections
-            if 'sections' not in selected_pathway or not selected_pathway['sections']:
-                st.error("❌ Selected pathway has no sections.")
-                return
-            
-            for section_idx, section in enumerate(selected_pathway['sections']):
-                section_title = section.get('title', 'Untitled Section')
-                modules = section.get('modules', [])
-                
-                print(f"📋 Section {section_idx + 1} '{section_title}' has {len(modules)} modules")
-                
-                # Clean section title to avoid special characters that might cause issues
-                section_title = section_title.strip()
-                
-                # Initialize section if not exists
-                if section_title not in editable_pathways:
-                    editable_pathways[section_title] = []
-                
-                # Add modules to section with debugging
-                for module_idx, module in enumerate(modules):
-                    module_data = {
-                        'title': module.get('title', 'Untitled Module'),
-                        'description': module.get('description', ''),
-                        'content': module.get('content', 'No content available'),
+            for section in selected_pathway['sections']:
+                section_title = section['title']
+                editable_pathways[section_title] = []
+                for module in section['modules']:
+                    editable_pathways[section_title].append({
+                        'title': module['title'],
+                        'description': module['description'],
+                        'content': module.get('content', ''),
                         'source': module.get('source', ['Content from uploaded files']),
                         'content_types': module.get('content_types', [])
-                    }
-                    editable_pathways[section_title].append(module_data)
-                    print(f"  ➕ Added module {module_idx + 1}: {module_data['title']}")
-                
-                print(f"✅ Section '{section_title}' converted with {len(editable_pathways[section_title])} modules")
-            
-            # Ensure we have at least one section
-            if not editable_pathways:
-                editable_pathways['Default Section'] = [{
-                    'title': 'Sample Module',
-                    'description': 'Sample module description',
-                    'content': 'Sample module content',
-                    'source': ['Generated content'],
-                    'content_types': []
-                }]
-            
+                    })
             st.session_state['editable_pathways'] = editable_pathways
             st.session_state['editable_pathways_pathway_idx'] = st.session_state['selected_pathway_idx']
-        
         editable_pathways = st.session_state['editable_pathways']
-        
-        # Double-check editable_pathways is valid
-        if not editable_pathways:
-            st.error("❌ No editable pathway data available.")
-            return
         # Show sections if pathway selected
         section_names = list(editable_pathways.keys())
-        
-        # Clean up any stale selected_section if it doesn't exist in current pathway
-        if st.session_state.get('selected_section') and st.session_state['selected_section'] not in section_names:
-            st.session_state['selected_section'] = None
-        
         st.markdown(f"### Sections in Pathway {st.session_state['selected_pathway_idx']+1}: {selected_pathway['pathway_name']}")
         for idx, section in enumerate(section_names):
             # Find section description from generated pathway
@@ -1455,41 +1349,12 @@ def show_training_discovery_page():
                 if section_desc:
                     st.markdown(f"*{section_desc}*")
             with col2:
-                # Generate unique key for section view button
-                section_view_key = generate_unique_widget_key(f"section_card_{section}", section)
-                if st.button(f"View Modules", key=section_view_key):
+                if st.button(f"View Modules", key=f"section_card_{section}"):
                     st.session_state['selected_section'] = section
             st.markdown("---")
         # Show modules if section selected
-        if st.session_state.get('selected_section'):
+        if st.session_state['selected_section']:
             section = st.session_state['selected_section']
-            
-            # Debug information
-            st.write(f"🔍 **Debug Info:**")
-            st.write(f"Selected section: '{section}'")
-            st.write(f"Available sections: {list(editable_pathways.keys())}")
-            
-            # Check if section exists in editable_pathways
-            if section not in editable_pathways:
-                st.error(f"❌ Section '{section}' not found in editable pathways.")
-                st.info("**Available sections:**")
-                for available_section in editable_pathways.keys():
-                    st.write(f"• '{available_section}'")
-                
-                # Try to find a similar section name
-                similar_sections = [s for s in editable_pathways.keys() if section.lower() in s.lower() or s.lower() in section.lower()]
-                if similar_sections:
-                    st.info(f"**Similar sections found:** {similar_sections}")
-                    if st.button("🔄 Use first similar section"):
-                        st.session_state['selected_section'] = similar_sections[0]
-                        st.rerun()
-                
-                # Reset selected section
-                if st.button("🔄 Reset section selection"):
-                    st.session_state['selected_section'] = None
-                    st.rerun()
-                return
-            
             mods = editable_pathways[section]
             section_idx = list(editable_pathways.keys()).index(section) + 1
             st.markdown(f"### Modules in Section {section_idx}: {section}")
@@ -1505,337 +1370,65 @@ def show_training_discovery_page():
                 i = 0
                 while i < len(mods):
                     mod = mods[i]
-                    col1, col2, col3, col4 = st.columns([3, 1, 1, 2])
+                    col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 2, 2])
                     with col1:
-                        # Display module number at the top
-                        st.markdown(f"**Module {i+1}**")
-                        
-                        # Generate unique keys for each widget using the new system
-                        title_key = generate_unique_widget_key(f"title_{section}_{i}", mod.get('title', ''))
-                        desc_key = generate_unique_widget_key(f"desc_{section}_{i}", mod.get('description', ''))
-                        content_key = generate_unique_widget_key(f"content_{section}_{i}", mod.get('content', ''))
-                        
-                        new_title = st.text_input(f"Title ({section}-{i})", mod['title'], key=title_key)
-                        new_desc = st.text_input(f"Description ({section}-{i})", mod.get('description', ''), key=desc_key)
-                        new_content = st.text_area(f"Training Material ({section}-{i})", mod['content'], key=content_key, help="The substantive training content extracted from your files - procedures, concepts, information learners need to know")
-                        
-                        # Show source information
-                        if 'source' in mod and mod['source']:
-                            st.caption(f"Source: {', '.join(mod['source'])}")
+                        new_title = st.text_input(f"Title ({section}-{i})", mod['title'], key=f"title_{section}_{i}")
+                        new_desc = st.text_input(f"Description ({section}-{i})", mod.get('description', ''), key=f"desc_{section}_{i}")
+                        new_content = st.text_area(f"Content ({section}-{i})", mod['content'], key=f"content_{section}_{i}")
+                        # Display correct local module number within section
+                        st.markdown(f"**Module {i+1}. {new_title}**")
                     
-                    # Move to section controls
+                    # Display content types on the right side
                     with col4:
-                        # Generate unique keys for move operations
-                        move_key = generate_unique_widget_key(f"move_{section}_{i}", f"{section}_{i}_{mod.get('title', '')}")
-                        
+                        st.markdown("**🎨 Content Types:**")
+                        content_types = mod.get('content_types', [])
+                        if content_types:
+                            for j, content_type in enumerate(content_types):
+                                with st.expander(f"📋 {content_type.get('title', f'Content Type {j+1}')}"):
+                                    st.markdown(f"**Type:** {content_type.get('type', 'Unknown')}")
+                                    st.markdown(f"**Description:** {content_type.get('description', 'No description')}")
+                                    st.markdown(f"**Content:** {content_type.get('content', 'No content')}")
+                        else:
+                            st.info("No content types generated for this module")
+                    
+                    with col2:
+                        if st.button("⬆️", key=f"up_{section}_{i}") and i > 0:
+                            mods[i-1], mods[i] = mods[i], mods[i-1]
+                            st.session_state['editable_pathways'] = editable_pathways
+                            st.experimental_rerun()
+                        if st.button("⬇️", key=f"down_{section}_{i}") and i < len(mods)-1:
+                            mods[i+1], mods[i] = mods[i], mods[i+1]
+                            st.session_state['editable_pathways'] = editable_pathways
+                            st.experimental_rerun()
+                    with col3:
+                        if st.button("🗑️ Delete", key=f"del_{section}_{i}"):
+                            mods.pop(i)
+                            st.session_state['editable_pathways'] = editable_pathways
+                            st.experimental_rerun()
+                    
+                    # Move section controls
+                    with col5:
                         move_to_section = st.selectbox(
                             "Move to section",
                             section_names,
                             index=section_names.index(section),
-                            key=move_key
+                            key=f"move_{section}_{i}"
                         )
                         if move_to_section != section:
                             editable_pathways[move_to_section].append(mod)
                             mods.pop(i)
                             st.session_state['editable_pathways'] = editable_pathways
-                            st.rerun()
-                    
-                    with col2:
-                        # Generate unique keys for movement buttons
-                        up_key = generate_unique_widget_key(f"up_{section}_{i}", f"{section}_{i}_{mod.get('title', '')}_up")
-                        down_key = generate_unique_widget_key(f"down_{section}_{i}", f"{section}_{i}_{mod.get('title', '')}_down")
-                        
-                        if st.button("⬆️", key=up_key) and i > 0:
-                            mods[i-1], mods[i] = mods[i], mods[i-1]
-                            st.session_state['editable_pathways'] = editable_pathways
-                            st.rerun()
-                        if st.button("⬇️", key=down_key) and i < len(mods)-1:
-                            mods[i+1], mods[i] = mods[i], mods[i+1]
-                            st.session_state['editable_pathways'] = editable_pathways
-                            st.rerun()
-                    with col3:
-                        # Generate unique key for delete button
-                        delete_key = generate_unique_widget_key(f"del_{section}_{i}", f"{section}_{i}_{mod.get('title', '')}_delete")
-                        
-                        if st.button("🗑️ Delete", key=delete_key):
-                            mods.pop(i)
-                            st.session_state['editable_pathways'] = editable_pathways
-                            st.rerun()
-                    
+                            st.experimental_rerun()
                     mod['title'] = new_title
                     mod['description'] = new_desc
                     mod['content'] = new_content
-                    
-                    # Display content types at the bottom
+                    st.markdown(f"_Description: {mod['description']}_")
+                    st.markdown(f"_Source: {', '.join(mod['source'])}_")
                     st.markdown("---")
-                    st.markdown("**🎨 Content Types & Media:**")
-                    
-                    # Get content blocks from the module (3+ content types per module)
-                    content_blocks = mod.get('content_blocks', [])
-                    
-                    # Check if content_blocks exist but have empty content_data
-                    need_content_generation = False
-                    if content_blocks:
-                        for block in content_blocks:
-                            if not block.get('content_data') or len(block.get('content_data', {})) == 0:
-                                need_content_generation = True
-                                break
-                    else:
-                        need_content_generation = True
-                    
-                    # Generate content blocks with actual file-based content if needed
-                    if need_content_generation:
-                        try:
-                            # Generate content blocks with actual content from module
-                            content_blocks = generate_content_blocks_with_file_content(mod, extracted_file_contents)
-                            mod['content_blocks'] = content_blocks
-                            st.session_state['editable_pathways'] = editable_pathways  # Save updated data
-                        except Exception as e:
-                            st.warning(f"⚠️ Content generation failed: {str(e)}")
-                            # Fallback to old content_types format if content_blocks generation fails
-                            content_types = mod.get('content_types', [])
-                            if not content_types:
-                                content_types = [
-                                    {'type': 'text', 'title': 'Module Content', 'description': 'Training material'},
-                                    {'type': 'video', 'title': 'Video Explanation', 'description': 'Visual demonstration using Veo3'},
-                                    {'type': 'knowledge_check', 'title': 'Knowledge Check', 'description': 'Assessment questions'}
-                                ]
-                                mod['content_types'] = content_types
-                            
-                            # Convert old format to content_blocks format with basic content
-                            content_blocks = []
-                            for i, ct in enumerate(content_types):
-                                # Handle case where ct might be a string instead of dict
-                                if isinstance(ct, str):
-                                    content_blocks.append({
-                                        'type': ct,
-                                        'title': f'{ct.title()} Content',
-                                        'content_data': generate_fallback_content_data(ct, mod.get('content', ''))
-                                    })
-                                elif isinstance(ct, dict):
-                                    content_blocks.append({
-                                        'type': ct.get('type', 'text'),
-                                        'title': ct.get('title', f'Content Block {i+1}'),
-                                        'content_data': ct.get('content_data', generate_fallback_content_data(ct.get('type', 'text'), mod.get('content', '')))
-                                    })
-                                else:
-                                    # Fallback for any other type
-                                    content_blocks.append({
-                                        'type': 'text',
-                                        'title': f'Content Block {i+1}',
-                                        'content_data': generate_fallback_content_data('text', mod.get('content', ''))
-                                    })
-                    
-                    # Display content blocks in columns (up to 4 columns for better layout)
-                    num_blocks = len(content_blocks)
-                    if num_blocks <= 3:
-                        columns = st.columns(num_blocks)
-                    else:
-                        columns = st.columns(4)
-                    
-                    # Display all content blocks
-                    for idx, content_block in enumerate(content_blocks):
-                        if idx < len(columns):
-                            with columns[idx]:
-                                block_type = content_block.get('type', 'content')
-                                block_title = content_block.get('title', f'Content Block {idx+1}')
-                                
-                                st.markdown(f"**{block_type.title()}**")
-                                st.markdown(f"*{block_title}*")
-                                
-                                # Display actual content data based on type
-                                content_data = content_block.get('content_data', {})
-                                if content_data and any(content_data.values()):  # Check if content_data has meaningful values
-                                    with st.expander(f"📋 View {block_type.title()} Content"):
-                                        display_content_block(block_type, content_data)
-                                else:
-                                    # Generate fallback content if missing or empty
-                                    with st.expander(f"📋 View {block_type.title()} Content"):
-                                        fallback_data = generate_fallback_content_data(block_type, "")
-                                        display_content_block(block_type, fallback_data)
-                                        st.info("💡 Content will be enhanced when you regenerate the pathway with file content.")
-
-def display_content_block(content_type, content_data):
-    """Display content block based on its type with graceful handling of empty data"""
-    import streamlit as st
-    
-    # Handle empty or None content_data
-    if not content_data:
-        st.warning(f"⚠️ No content data available for {content_type}")
-        return
-    
-    if content_type == 'video':
-        st.markdown("🎬 *Generated with Veo3*")
-        
-        # Show video status
-        video_status = content_data.get('video_status', 'completed')
-        if video_status == 'completed':
-            st.success("✅ Video generated successfully!")
+                    i += 1
             
-            # Show video details with fallbacks
-            if content_data.get('video_script'):
-                st.markdown("**📝 Video Script:**")
-                st.text_area("Script", content_data['video_script'], height=100, disabled=True)
-            else:
-                st.info("📝 Video script will be generated from module content")
-                
-            duration = content_data.get('video_duration', '3-5 minutes')
-            st.markdown(f"**⏱️ Duration:** {duration}")
-            
-            summary = content_data.get('video_summary', 'Educational video content')
-            st.markdown(f"**📋 Summary:** {summary}")
-        else:
-            st.info("🔄 Video generation in progress...")
-    
-    elif content_type == 'knowledge_check':
-        st.markdown("**📚 Assessment Questions:**")
-        questions = content_data.get('questions', [])
-        answers = content_data.get('answers', [])
-        
-        if questions and answers:
-            for i, (q, a) in enumerate(zip(questions, answers), 1):
-                st.markdown(f"**Q{i}:** {q}")
-                with st.expander(f"View Answer {i}"):
-                    st.markdown(f"**A{i}:** {a}")
-        else:
-            st.info("📚 Assessment questions will be generated from module content")
-            
-        question_type = content_data.get('question_type', 'Multiple Choice')
-        st.markdown(f"**Type:** {question_type}")
-        
-        difficulty = content_data.get('difficulty_level', 'Intermediate')
-        st.markdown(f"**Difficulty:** {difficulty}")
-    
-    elif content_type == 'text':
-        st.markdown("**📄 Training Content:**")
-        text_content = content_data.get('text', 'Training content will be generated from module material')
-        st.markdown(text_content)
-        
-        key_points = content_data.get('key_points', [])
-        if key_points:
-            st.markdown("**🔑 Key Points:**")
-            for point in key_points:
-                st.markdown(f"• {point}")
-        else:
-            st.info("🔑 Key points will be extracted from module content")
-    
-    elif content_type == 'list':
-        st.markdown("**📋 Checklist:**")
-        list_items = content_data.get('list_items', [])
-        if list_items:
-            for item in list_items:
-                st.markdown(f"• {item}")
-        else:
-            st.info("📋 Checklist items will be generated from module procedures")
-            
-        instructions = content_data.get('instructions', 'Follow the checklist to complete the module')
-        st.markdown(f"**Instructions:** {instructions}")
-    
-    elif content_type == 'assignment':
-        st.markdown("**📝 Assignment Task:**")
-        assignment_task = content_data.get('assignment_task', 'Assignment will be based on module content')
-        st.markdown(assignment_task)
-        
-        deliverables = content_data.get('deliverables', 'Written analysis and practical demonstration')
-        st.markdown(f"**📦 Deliverables:** {deliverables}")
-        
-        evaluation = content_data.get('evaluation_criteria', 'Understanding of concepts and quality of application')
-        st.markdown(f"**⭐ Evaluation:** {evaluation}")
-    
-    elif content_type == 'flashcard':
-        st.markdown("**🃏 Flashcard:**")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("**Front:**")
-            st.info(content_data.get('flashcard_front', 'Question'))
-        with col2:
-            st.markdown("**Back:**")
-            st.success(content_data.get('flashcard_back', 'Answer'))
-    
-    elif content_type == 'accordion':
-        st.markdown("**📚 Accordion Sections:**")
-        if 'accordion_sections' in content_data:
-            for section in content_data['accordion_sections']:
-                with st.expander(section.get('title', 'Section')):
-                    st.markdown(section.get('content', 'Content'))
-    
-    elif content_type == 'tabs':
-        st.markdown("**📑 Tabbed Content:**")
-        if 'tab_sections' in content_data:
-            tab_titles = [tab.get('tab_title', f'Tab {i+1}') for i, tab in enumerate(content_data['tab_sections'])]
-            tabs = st.tabs(tab_titles)
-            for tab, section in zip(tabs, content_data['tab_sections']):
-                with tab:
-                    st.markdown(section.get('tab_content', 'Content'))
-    
-    elif content_type == 'survey':
-        st.markdown("**📊 Survey Questions:**")
-        if 'survey_questions' in content_data:
-            for i, question in enumerate(content_data['survey_questions'], 1):
-                st.markdown(f"**Q{i}:** {question.get('question', 'Question')}")
-                if question.get('type') == 'multiple_choice':
-                    st.radio(f"Select answer for Q{i}:", question.get('options', []), key=f"survey_q{i}")
-                elif question.get('type') == 'checkbox':
-                    for option in question.get('options', []):
-                        st.checkbox(option, key=f"survey_q{i}_{option}")
-                elif question.get('type') == 'text_area':
-                    st.text_area(f"Answer Q{i}:", placeholder=question.get('placeholder', ''), key=f"survey_q{i}")
-    
-    elif content_type == 'image':
-        st.markdown("**🖼️ Image Content:**")
-        if 'image_description' in content_data:
-            st.markdown(f"**Description:** {content_data['image_description']}")
-        if 'image_purpose' in content_data:
-            st.markdown(f"**Purpose:** {content_data['image_purpose']}")
-        st.info("📷 Image will be generated based on the description above")
-    
-    elif content_type == 'file':
-        st.markdown("**📁 File Resource:**")
-        if 'file_description' in content_data:
-            st.markdown(f"**Description:** {content_data['file_description']}")
-        if 'file_type' in content_data:
-            st.markdown(f"**Type:** {content_data['file_type']}")
-        st.download_button(
-            label="📥 Download Reference Material",
-            data="Sample file content would be here",
-            file_name="training_reference.pdf",
-            mime="application/pdf"
-        )
-    
-    elif content_type == 'divider':
-        st.markdown("---")
-        if 'divider_text' in content_data:
-            st.markdown(f"**{content_data['divider_text']}**")
-        st.markdown("---")
-    
-    else:
-        # Generic display for unknown content types
-        st.markdown("**📄 Content:**")
-        for key, value in content_data.items():
-            if isinstance(value, list):
-                st.markdown(f"**{key.replace('_', ' ').title()}:**")
-                for item in value:
-                    st.markdown(f"• {item}")
-            else:
-                st.markdown(f"**{key.replace('_', ' ').title()}:** {value}")
-        # --- Export and Save Buttons ---
-        st.markdown("---")
-        col1, col2, col3, col4, col5 = st.columns(5)
-        with col1:
-            if st.button("← Back to File Upload"):
-                st.session_state.discovery_step = 2
-                st.rerun()
-        with col2:
-            if st.button("🔄 Regenerate Pathway"):
-                del st.session_state['generated_pathway']
-                del st.session_state['editable_pathways']
-                st.rerun()
-        with col3:
-            if st.button("🤖 Generate New Pathway"):
-                del st.session_state['generated_pathway']
-                del st.session_state['editable_pathways']
-                st.rerun()
-        
+            # Remove chatbot from module view since we have floating chatbot
+            pass
         # --- Export and Save Buttons ---
         st.markdown("---")
         col1, col2, col3, col4, col5 = st.columns(5)
@@ -2969,159 +2562,17 @@ def show_mind_maps_page():
         st.success("✅ Markmap component test completed!")
 
 def show_video_generation_page():
-    """Video generation page with actual Veo3 integration"""
-    st.header("📹 AI Video Generation with Veo3")
-    st.success("🎬 Live Veo3 Integration - Generate actual videos from your training content!")
+    """Video generation page"""
+    st.header("📹 AI Video Generation")
+    st.info("Video generation features coming soon...")
     
-    # Veo3 Integration Section
+    # Placeholder for video generation functionality
     st.markdown("""
-    ## 🚀 Active Veo3 Integration
-    
-    Your training modules now feature **live Veo3 video generation**:
-    - **Real video creation** from your training content
-    - **Professional quality** videos with realistic visuals
-    - **Industry-specific scenes** tailored to your training material
-    - **Immediate generation** with progress tracking
-    - **Thumbnail previews** and video management
-    """)
-    
-    # Show actual video generation status
-    st.markdown("### 🎯 Current Video Generation Status")
-    
-    if 'generated_pathway' in st.session_state:
-        pathways = st.session_state['generated_pathway'].get('pathways', [])
-        if pathways:
-            total_modules = 0
-            video_modules = 0
-            completed_videos = 0
-            
-            for pathway in pathways:
-                for section in pathway.get('sections', []):
-                    for module in section.get('modules', []):
-                        total_modules += 1
-                        content_types = module.get('content_types', [])
-                        
-                        for ct in content_types:
-                            if isinstance(ct, dict) and ct.get('type') == 'video':
-                                video_modules += 1
-                                if ct.get('content_data', {}).get('video_status') == 'completed':
-                                    completed_videos += 1
-            
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Total Modules", total_modules)
-            with col2:
-                st.metric("Video-Enabled Modules", video_modules)
-            with col3:
-                st.metric("Completed Videos", completed_videos)
-            
-            # Show progress
-            if video_modules > 0:
-                progress = completed_videos / video_modules
-                st.progress(progress)
-                st.caption(f"Video generation progress: {completed_videos}/{video_modules} ({progress*100:.1f}%)")
-            
-            # Show module details
-            st.markdown("### 📋 Module Video Status")
-            for pathway in pathways:
-                with st.expander(f"🎯 {pathway['pathway_name']}"):
-                    for section in pathway.get('sections', []):
-                        st.markdown(f"**{section['title']}**")
-                        for module in section.get('modules', []):
-                            content_types = module.get('content_types', [])
-                            video_ct = next((ct for ct in content_types if isinstance(ct, dict) and ct.get('type') == 'video'), None)
-                            
-                            if video_ct:
-                                video_status = video_ct.get('content_data', {}).get('video_status', 'unknown')
-                                module_title = module.get('title', 'Unnamed Module')
-                                
-                                if video_status == 'completed':
-                                    st.success(f"✅ {module_title} - Video ready")
-                                    video_url = video_ct.get('content_data', {}).get('video_url')
-                                    if video_url:
-                                        st.caption(f"Video URL: {video_url}")
-                                elif video_status == 'generating':
-                                    st.info(f"🔄 {module_title} - Generating...")
-                                elif video_status == 'failed':
-                                    st.error(f"❌ {module_title} - Generation failed")
-                                else:
-                                    st.warning(f"⏳ {module_title} - Ready for generation")
-                            else:
-                                st.caption(f"📄 {module.get('title', 'Unnamed Module')} - No video content")
-    else:
-        st.info("Generate a pathway first to see video generation options!")
-    
-    st.markdown("---")
-    
-    # Manual video generation section
-    st.markdown("### 🎬 Manual Video Generation")
-    st.markdown("Generate a custom video using Veo3:")
-    
-    custom_prompt = st.text_area(
-        "Enter your video description:",
-        placeholder="Create a professional training video showing...",
-        height=100
-    )
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        video_duration = st.selectbox("Duration", ["30 seconds", "1 minute", "2 minutes", "5 minutes"])
-    with col2:
-        video_style = st.selectbox("Style", ["professional", "educational", "demonstration", "tutorial"])
-    
-    if st.button("🎬 Generate Custom Video with Veo3"):
-        if custom_prompt:
-            st.info("🔄 Generating custom video with Veo3...")
-            
-            try:
-                from modules.veo3_integration import generate_veo3_video
-                
-                result = generate_veo3_video(
-                    prompt=custom_prompt,
-                    duration=video_duration,
-                    style=video_style
-                )
-                
-                if result.get('success'):
-                    st.success("✅ Custom video generated successfully!")
-                    
-                    video_url = result.get('video_url')
-                    if video_url:
-                        st.video(video_url)
-                    
-                    thumbnail_url = result.get('thumbnail_url')
-                    if thumbnail_url:
-                        st.image(thumbnail_url, caption="Video Thumbnail", width=300)
-                        
-                    st.caption(f"Generation ID: {result.get('generation_id', 'N/A')}")
-                else:
-                    st.error("❌ Video generation failed. Please try again.")
-                    
-            except Exception as e:
-                st.error(f"❌ Error generating video: {str(e)}")
-        else:
-            st.warning("Please enter a video description first.")
-    
-    st.markdown("---")
-    
-    # Technical details
-    st.markdown("""
-    ## 🔧 Technical Details
-    
-    **Veo3 Integration Features:**
-    - **Real-time generation** with status tracking
-    - **Professional quality** video output
-    - **Custom prompts** for specific training needs
-    - **Progress monitoring** and error handling
-    - **Thumbnail generation** for video previews
-    - **URL-based video delivery** for easy sharing
-    
-    **Video Generation Process:**
-    1. Content analysis and prompt creation
-    2. Veo3 API call with optimized parameters
-    3. Real-time status monitoring
-    4. Video delivery and thumbnail generation
-    5. Integration with training modules
+    This section will include:
+    - **Vadoo AI Integration** - Generate training videos
+    - **Canva Veo3 Integration** - Create professional video content
+    - **Custom video templates** - Industry-specific video styles
+    - **Voice-over generation** - AI-powered narration
     """)
 
 def show_document_processing_page():
@@ -3781,305 +3232,52 @@ def find_best_content_for_module(target_module, new_content_modules):
     except Exception as e:
         return None
 
-def preprocess_file_content_for_ai(content, filename):
-    """
-    Preprocess file content for optimal AI processing
-    Cleans and structures content while preserving important information
-    """
-    try:
-        if not content:
-            return "No content available"
-        
-        # Clean the content but preserve structure and important information
-        processed = content.strip()
-        
-        # Remove excessive whitespace while preserving paragraph breaks
-        processed = re.sub(r'\n\s*\n\s*\n+', '\n\n', processed)
-        processed = re.sub(r'[ \t]+', ' ', processed)
-        
-        # Remove meeting metadata but preserve actual content
-        processed = re.sub(r'Teams Meeting.*?\d{4}', '', processed, flags=re.IGNORECASE)
-        processed = re.sub(r'Meeting ID.*?\n', '', processed, flags=re.IGNORECASE)
-        processed = re.sub(r'(thank|thanks)\s+(you|personnel|everyone)', '', processed, flags=re.IGNORECASE)
-        
-        # If content is very long, intelligently chunk it to preserve important sections
-        max_content_length = 8000  # Increased from 3000 to preserve more content
-        
-        if len(processed) > max_content_length:
-            # Smart chunking - try to preserve complete sections
-            chunks = []
-            current_chunk = ""
-            
-            # Split by paragraphs and preserve important ones
-            paragraphs = processed.split('\n\n')
-            
-            for paragraph in paragraphs:
-                if len(current_chunk) + len(paragraph) < max_content_length:
-                    current_chunk += paragraph + '\n\n'
-                else:
-                    if current_chunk:
-                        chunks.append(current_chunk.strip())
-                    current_chunk = paragraph + '\n\n'
-            
-            if current_chunk:
-                chunks.append(current_chunk.strip())
-            
-            # Use the most substantial chunk or combine first few chunks
-            if chunks:
-                if len(chunks[0]) > max_content_length * 0.6:
-                    processed = chunks[0]
-                elif len(chunks) > 1:
-                    combined = chunks[0] + '\n\n' + chunks[1]
-                    if len(combined) <= max_content_length:
-                        processed = combined
-                    else:
-                        processed = chunks[0]
-                else:
-                    processed = chunks[0]
-        
-        # Ensure we have substantial content
-        if len(processed.strip()) < 100:
-            return f"Limited content available from {filename}. Please ensure the file contains substantial text content for training module generation."
-        
-        return processed.strip()
-        
-    except Exception as e:
-        return f"Error processing content from {filename}: {str(e)}"
-
-def validate_file_specific_content(module_content, original_content, filename):
-    """
-    Validate that module content contains file-specific information rather than generic content
-    """
-    try:
-        content_lower = module_content.lower()
-        original_lower = original_content.lower()
-        
-        # Check for generic template phrases that indicate non-file-specific content
-        generic_phrases = [
-            "this comprehensive module",
-            "this module covers",
-            "this training module",
-            "students will learn",
-            "by the end of this module",
-            "this section provides",
-            "overview of concepts",
-            "general principles",
-            "basic understanding",
-            "fundamental concepts"
-        ]
-        
-        # Count generic phrases
-        generic_count = sum(1 for phrase in generic_phrases if phrase in content_lower)
-        
-        # Check for specific content overlap with original file
-        words_in_module = set(content_lower.split())
-        words_in_original = set(original_lower.split())
-        
-        # Calculate content overlap (excluding common words)
-        common_words = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those'}
-        
-        significant_words_module = words_in_module - common_words
-        significant_words_original = words_in_original - common_words
-        
-        if significant_words_module and significant_words_original:
-            overlap_ratio = len(significant_words_module & significant_words_original) / len(significant_words_module)
-        else:
-            overlap_ratio = 0
-        
-        # Content is considered file-specific if:
-        # 1. Low generic phrase count AND
-        # 2. Good overlap with original content
-        is_file_specific = (generic_count < 2) and (overlap_ratio > 0.3)
-        
-        return is_file_specific
-        
-    except Exception as e:
-        # If validation fails, default to accepting content
-        return True
-
-def create_file_based_content_types(module_content, filename, original_content):
-    """
-    Create content types that incorporate actual file content
-    """
-    try:
-        content_types = [
-            {
-                'type': 'text',
-                'title': 'File-Based Training Content',
-                'description': f'Training material extracted from {filename}',
-                'content_data': {
-                    'text': module_content,
-                    'source_file': filename,
-                    'file_specific': True
-                }
-            },
-            {
-                'type': 'list',
-                'title': 'Key Points from File',
-                'description': f'Important information extracted from {filename}',
-                'content_data': {
-                    'list_items': extract_key_points_from_content(module_content),
-                    'list_type': 'key_points',
-                    'source_file': filename
-                }
-            },
-            {
-                'type': 'knowledge_check',
-                'title': 'File Content Comprehension',
-                'description': f'Assessment based on content from {filename}',
-                'content_data': {
-                    'questions': generate_file_based_questions(module_content),
-                    'answers': generate_file_based_answers(module_content),
-                    'question_type': 'file_comprehension',
-                    'source_file': filename
-                }
-            }
-        ]
-        
-        return content_types
-        
-    except Exception as e:
-        return [{
-            'type': 'text',
-            'title': 'Training Content',
-            'description': 'Training material',
-            'content_data': {'text': module_content}
-        }]
-
-def extract_key_points_from_content(content):
-    """
-    Extract key points from content for list-type content blocks
-    """
-    try:
-        # Simple extraction - split by sentences and take substantive ones
-        sentences = content.split('.')
-        key_points = []
-        
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if len(sentence) > 30 and len(sentence) < 150:  # Good length for key points
-                if not any(generic in sentence.lower() for generic in ['this module', 'students will', 'by the end']):
-                    key_points.append(sentence)
-                    if len(key_points) >= 5:  # Limit to 5 key points
-                        break
-        
-        return key_points if key_points else [content[:100] + "..."]
-        
-    except Exception as e:
-        return [content[:100] + "..."]
-
-def generate_file_based_questions(content):
-    """
-    Generate questions based on the actual file content
-    """
-    try:
-        # Extract key concepts for questions
-        questions = []
-        
-        # Simple heuristic: look for important statements that can become questions
-        sentences = content.split('.')
-        for sentence in sentences[:3]:  # Take first few substantial sentences
-            sentence = sentence.strip()
-            if len(sentence) > 20:
-                # Convert statement to question format
-                if 'must' in sentence.lower() or 'should' in sentence.lower() or 'required' in sentence.lower():
-                    questions.append(f"What are the requirements mentioned regarding: {sentence[:50]}...?")
-                elif 'process' in sentence.lower() or 'procedure' in sentence.lower():
-                    questions.append(f"Describe the process mentioned: {sentence[:50]}...?")
-                else:
-                    questions.append(f"What is important about: {sentence[:50]}...?")
-                    
-                if len(questions) >= 3:
-                    break
-        
-        return questions if questions else ["What are the key points from this training content?"]
-        
-    except Exception as e:
-        return ["What are the key points from this training content?"]
-
-def generate_file_based_answers(content):
-    """
-    Generate answers based on the actual file content
-    """
-    try:
-        # Extract key information for answers
-        answers = []
-        sentences = content.split('.')
-        
-        for sentence in sentences[:3]:
-            sentence = sentence.strip()
-            if len(sentence) > 20:
-                answers.append(sentence)
-                if len(answers) >= 3:
-                    break
-        
-        return answers if answers else [content[:100] + "..."]
-        
-    except Exception as e:
-        return [content[:100] + "..."]
-
 def extract_fast_modules_from_content(filename, content, training_context, primary_goals):
     """
-    Enhanced file content extraction with improved processing and validation
-    Extracts meaningful training modules from actual file content
+    Fast module extraction using single AI call per file
+    Optimized for speed while maintaining quality
     """
     try:
         if not model:
             return []
         
-        # Enhanced content processing - remove truncation and process full content
-        processed_content = preprocess_file_content_for_ai(content, filename)
-        
-        # Create enhanced prompt that forces file-specific content generation
+        # Create a comprehensive prompt for single AI call
         prompt = f"""
-        CRITICAL: You must extract ACTUAL training modules from the SPECIFIC CONTENT in this file: {filename}
+        Extract training modules from this content file: {filename}
         
-        FILE CONTENT TO PROCESS:
-        {processed_content}
+        Content: {content[:3000]}  # Limit content length for speed
         
-        USER'S TRAINING GOALS: {primary_goals}
-        TRAINING CONTEXT:
+        Training Context:
+        - Goals: {primary_goals}
         - Type: {training_context.get('training_type', 'General')}
         - Audience: {training_context.get('target_audience', 'Employees')}
         - Industry: {training_context.get('industry', 'General')}
         
-        CRITICAL REQUIREMENTS:
-        1. Extract 3-5 training modules from the ACTUAL CONTENT ABOVE (not generic content)
-        2. Each module must contain SPECIFIC INFORMATION from the file content
-        3. Module titles must reflect ACTUAL CONTENT topics (e.g., specific procedures, processes, information found in the file)
-        4. Module content must be EXTRACTED FROM THE FILE - use actual data, procedures, examples, information
-        5. NO GENERIC CONTENT - every module must contain specific information from the uploaded file
-        6. NO PLACEHOLDER TEXT - use actual file content only
-        7. Each module must directly support the user's training goals: {primary_goals}
+        Instructions:
+        1. Extract 2-4 key training modules from the content
+        2. Each module should be relevant to the training goals
+        3. Create CLEAR, DESCRIPTIVE titles that reflect the actual content (e.g., "Sales Role Responsibilities", "BDM Duties and Objectives", "Customer Relationship Management")
+        4. Write BRIEF but MEANINGFUL descriptions that explain what the module covers (e.g., "Overview of sales team roles, responsibilities, and performance objectives")
+        5. Include practical, actionable content
+        6. Focus on the most important training topics
+        7. DO NOT use generic titles like "Content from filename" or "Understanding Your Counterparts"
+        8. DO NOT use generic descriptions like "Content extracted from filename"
         
-        CONTENT VALIDATION REQUIREMENTS:
-        - Module content must quote or paraphrase actual information from the file
-        - Module titles must reflect specific topics found in the file content
-        - Descriptions must explain what specific information from the file will be learned
-        - NO generic statements like "This module covers..." - use actual file information
-        
-        EXAMPLE OF WHAT TO DO:
-        If the file contains "The safety protocol requires workers to wear hard hats in zones A and B", 
-        create a module titled "Zone A and B Hard Hat Safety Protocol" with content that includes this specific requirement.
-        
-        EXAMPLE OF WHAT NOT TO DO:
-        Do not create generic modules like "Safety Overview" with generic content like "This module covers important safety concepts"
+        IMPORTANT: Titles should be specific and descriptive, not generic. Descriptions should explain the content, not just state the source.
         
         Return the modules in this JSON format:
         {{
             "modules": [
                 {{
-                    "title": "Specific Topic from File Content",
-                    "description": "Explanation of what specific file information will be learned",
-                    "content": "Detailed training content extracted directly from the file - include specific procedures, data, examples, requirements, or other concrete information found in the uploaded content",
+                    "title": "Specific, Descriptive Title",
+                    "description": "Brief explanation of what this module covers",
+                    "content": "Detailed training content",
                     "source": ["{filename}"],
-                    "content_types": [],
-                    "file_specific": true
+                    "content_types": []
                 }}
             ]
         }}
         
-        CRITICAL: Every module's content field must contain specific information from the file. Do not generate generic training content.
         Only return valid JSON, no explanations.
         """
         
@@ -4092,39 +3290,28 @@ def extract_fast_modules_from_content(filename, content, training_context, prima
             result = json.loads(response_text)
             modules = result.get('modules', [])
             
-            # Enhanced validation to ensure file-specific content
+            # Validate and clean modules, then add content types
             valid_modules = []
             for module in modules:
                 if module.get('title') and module.get('content'):
-                    # Validate content is substantial and file-specific
-                    content_text = module['content']
-                    
-                    # Check for file-specific content (reject generic templates)
-                    if validate_file_specific_content(content_text, processed_content, filename):
-                        # Ensure content is substantial
-                        if len(content_text) > 100:  # Increased minimum content length
-                            # Generate enhanced content types for this module
-                            try:
-                                from modules.utils import generate_enhanced_content_types_with_file_data
-                                content_types = generate_enhanced_content_types_with_file_data(
-                                    content_text, training_context, processed_content, primary_goals
-                                )
-                                module['content_types'] = content_types
-                            except Exception as e:
-                                # Enhanced fallback with file content integration
-                                module['content_types'] = create_file_based_content_types(
-                                    content_text, filename, processed_content
-                                )
-                            
-                            # Mark as file-specific and add metadata
-                            module['file_specific'] = True
-                            module['extraction_quality'] = 'high'
-                            
-                            valid_modules.append(module)
-                        else:
-                            print(f"Rejected module '{module.get('title')}' - insufficient content length")
-                    else:
-                        print(f"Rejected module '{module.get('title')}' - generic content detected")
+                    # Ensure content is substantial
+                    if len(module['content']) > 50:
+                        # Generate content types for this module
+                        try:
+                            from modules.utils import generate_content_types_with_ai_fast
+                            content_types = generate_content_types_with_ai_fast(module['content'], training_context)
+                            module['content_types'] = content_types
+                        except Exception as e:
+                            # Fallback to basic content types if AI generation fails
+                            module['content_types'] = [
+                                {
+                                    'type': 'text',
+                                    'title': 'Module Content',
+                                    'description': 'Detailed explanation of the training content',
+                                    'content': module['content']
+                                }
+                            ]
+                        valid_modules.append(module)
             
             return valid_modules
             
@@ -4424,28 +3611,25 @@ def get_module_reference_info(editable_pathways):
 
 def format_module_reference_help(editable_pathways):
     """
-    Format module reference information for chatbot help with decimal numbering
+    Format module reference information for chatbot help
     """
     reference_info = get_module_reference_info(editable_pathways)
     
     help_text = "**Available Modules by Section:**\n\n"
     
-    section_count = 0
     for section_info in reference_info:
-        section_count += 1
         help_text += f"**{section_info['section_name']}** ({section_info['module_count']} modules):\n"
         
-        for i, module_info in enumerate(section_info['modules']):
-            module_number = f"{section_count}.{i+1}"
-            help_text += f"  • Module {module_number}: {module_info['title']}\n"
+        for module_info in section_info['modules']:
+            help_text += f"  • Module {module_info['local_number']}: {module_info['title']}\n"
         
         help_text += "\n"
     
     help_text += "**Reference Examples:**\n"
-    help_text += "• \"Update module 1.1\" (refers to first module in first section)\n"
-    help_text += "• \"Regenerate module 1.2 in section 1\"\n"
+    help_text += "• \"Update module 1\" (refers to first module in current section)\n"
+    help_text += "• \"Regenerate module 2 in safety section\"\n"
     help_text += "• \"Update the safety procedures module\"\n"
-    help_text += "• \"Modify module 2.3 in section 2\"\n"
+    help_text += "• \"Modify module 3 in section 2\"\n"
     
     return help_text
 
@@ -4939,305 +4123,6 @@ def process_chatbot_request(user_input, uploaded_files=None):
                 return f"I see you've uploaded {len(uploaded_files)} file(s). You can:\n• \"Update module 1 with new file\"\n• \"Add content to section 3\"\n• \"Modify module 1 with uploaded content\"\n• \"Update pathway with new information\"\n• \"Regenerate module 2 with uploaded files\"\n\nPlease specify which module, section, or pathway you'd like to update with the uploaded files.\n\n{module_reference_help}"
             else:
                 return f"I can help you with:\n• Regenerating modules with different content or tone\n• Uploading new files to update pathways\n• Changing module tone/style (professional, casual, formal, technical, friendly, etc.)\n• Adding missing information to modules\n• Updating specific modules/sections with new file content\n• Searching for specific topics in pathways\n• Answering questions about training content\n\nPlease be more specific about what you'd like to do.\n\n{module_reference_help}"
-
-def generate_content_blocks_with_file_content(module, extracted_file_contents):
-    """
-    Generate content blocks with actual file-based content for a module
-    """
-    try:
-        from modules.config import model
-        
-        # Get module content and source files
-        module_content = module.get('content', '')
-        module_title = module.get('title', 'Training Module')
-        module_source = module.get('source', [])
-        
-        # Find relevant file content
-        relevant_content = ""
-        if isinstance(module_source, str):
-            module_source = [module_source]
-        
-        for source in module_source:
-            if source in extracted_file_contents:
-                file_content = extracted_file_contents[source]
-                # Get a relevant excerpt from the file
-                relevant_content += f"\n\nFrom {source}:\n{file_content[:1500]}"
-        
-        # If no specific source files, use all available content (limited)
-        if not relevant_content and extracted_file_contents:
-            for filename, content in list(extracted_file_contents.items())[:2]:
-                relevant_content += f"\n\nFrom {filename}:\n{content[:800]}"
-        
-        # Define content types to generate
-        content_types = ['text', 'video', 'knowledge_check', 'flashcard', 'list']
-        content_blocks = []
-        
-        for content_type in content_types:
-            try:
-                content_data = generate_file_based_content_data(content_type, module_title, module_content, relevant_content)
-                content_blocks.append({
-                    'type': content_type,
-                    'title': f"{content_type.title().replace('_', ' ')} Content",
-                    'content_data': content_data
-                })
-            except Exception as e:
-                # Fallback for individual content type generation failure
-                content_blocks.append({
-                    'type': content_type,
-                    'title': f"{content_type.title().replace('_', ' ')} Content",
-                    'content_data': generate_fallback_content_data(content_type, module_content)
-                })
-        
-        return content_blocks[:4]  # Return up to 4 content blocks
-        
-    except Exception as e:
-        # Return basic content blocks if generation fails completely
-        return [
-            {
-                'type': 'text',
-                'title': 'Text Content',
-                'content_data': generate_fallback_content_data('text', module.get('content', ''))
-            },
-            {
-                'type': 'video',
-                'title': 'Video Content',
-                'content_data': generate_fallback_content_data('video', module.get('content', ''))
-            },
-            {
-                'type': 'knowledge_check',
-                'title': 'Knowledge Check',
-                'content_data': generate_fallback_content_data('knowledge_check', module.get('content', ''))
-            }
-        ]
-
-def generate_file_based_content_data(content_type, module_title, module_content, file_content):
-    """
-    Generate content data based on actual file content using AI
-    """
-    try:
-        from modules.config import model
-        
-        if not model:
-            return generate_fallback_content_data(content_type, module_content)
-        
-        # Create specific prompts for each content type
-        if content_type == 'text':
-            prompt = f"""
-            Create detailed text content for "{module_title}" based on this file content:
-            
-            Module Content: {module_content[:500]}
-            File Content: {file_content[:1000]}
-            
-            Generate structured text content with:
-            - Key learning points (3-5 bullet points)
-            - Detailed explanation
-            - Practical applications
-            
-            Return as JSON: {{"text": "detailed content", "key_points": ["point1", "point2", "point3"]}}
-            """
-            
-        elif content_type == 'video':
-            prompt = f"""
-            Create a video script for "{module_title}" based on this file content:
-            
-            Module Content: {module_content[:500]}
-            File Content: {file_content[:1000]}
-            
-            Generate video content with:
-            - Scene descriptions
-            - Narration script
-            - Key visual elements
-            
-            Return as JSON: {{"video_script": "narration script", "video_duration": "3-5 minutes", "video_summary": "brief summary", "video_status": "completed"}}
-            """
-            
-        elif content_type == 'knowledge_check':
-            prompt = f"""
-            Create assessment questions for "{module_title}" based on this file content:
-            
-            Module Content: {module_content[:500]}
-            File Content: {file_content[:1000]}
-            
-            Generate 3 questions with answers covering key concepts from the file content.
-            
-            Return as JSON: {{"questions": ["Q1", "Q2", "Q3"], "answers": ["A1", "A2", "A3"], "question_type": "Multiple Choice", "difficulty_level": "Intermediate"}}
-            """
-            
-        elif content_type == 'flashcard':
-            prompt = f"""
-            Create flashcard content for "{module_title}" based on this file content:
-            
-            Module Content: {module_content[:500]}
-            File Content: {file_content[:1000]}
-            
-            Generate a flashcard with a key concept from the file.
-            
-            Return as JSON: {{"flashcard_front": "Key concept question", "flashcard_back": "Detailed answer from file content"}}
-            """
-            
-        elif content_type == 'list':
-            prompt = f"""
-            Create a checklist for "{module_title}" based on this file content:
-            
-            Module Content: {module_content[:500]}
-            File Content: {file_content[:1000]}
-            
-            Generate a practical checklist of steps or procedures from the file content.
-            
-            Return as JSON: {{"list_items": ["step1", "step2", "step3", "step4"], "instructions": "How to use this checklist"}}
-            """
-            
-        else:
-            return generate_fallback_content_data(content_type, module_content)
-        
-        # Generate content with AI
-        response = model.generate_content(prompt)
-        if response and response.text:
-            try:
-                import json
-                # Extract JSON from response
-                response_text = response.text.strip()
-                if response_text.startswith('```json'):
-                    response_text = response_text.replace('```json', '').replace('```', '').strip()
-                content_data = json.loads(response_text)
-                return content_data
-            except json.JSONDecodeError:
-                # If JSON parsing fails, create content from the text response
-                return generate_content_from_text_response(content_type, response.text, module_content)
-        
-        return generate_fallback_content_data(content_type, module_content)
-        
-    except Exception as e:
-        return generate_fallback_content_data(content_type, module_content)
-
-def generate_content_from_text_response(content_type, ai_response, module_content):
-    """
-    Generate content data from AI text response when JSON parsing fails
-    """
-    if content_type == 'text':
-        return {
-            'text': ai_response[:500],
-            'key_points': [line.strip() for line in ai_response.split('\n') if line.strip().startswith('•') or line.strip().startswith('-')][:3]
-        }
-    elif content_type == 'video':
-        return {
-            'video_script': ai_response[:300],
-            'video_duration': '3-5 minutes',
-            'video_summary': module_content[:150],
-            'video_status': 'completed'
-        }
-    elif content_type == 'knowledge_check':
-        lines = [line.strip() for line in ai_response.split('\n') if line.strip()]
-        questions = [line for line in lines if '?' in line][:3]
-        if not questions:
-            questions = ['What are the key concepts in this module?', 'How would you apply this knowledge?', 'What are the most important takeaways?']
-        return {
-            'questions': questions,
-            'answers': [f'Answer based on: {module_content[:100]}...' for _ in questions],
-            'question_type': 'Open-ended',
-            'difficulty_level': 'Intermediate'
-        }
-    else:
-        return generate_fallback_content_data(content_type, module_content)
-
-def generate_fallback_content_data(content_type, module_content):
-    """
-    Generate basic fallback content data when AI generation fails
-    """
-    if content_type == 'text':
-        return {
-            'text': f"This module covers: {module_content[:200]}..." if module_content else "Comprehensive training content covering key concepts and practical applications.",
-            'key_points': [
-                "Essential concepts and fundamentals",
-                "Practical application methods", 
-                "Best practices and standards"
-            ]
-        }
-    elif content_type == 'video':
-        return {
-            'video_script': f"Video content for: {module_content[:150]}..." if module_content else "Professional training video covering essential concepts.",
-            'video_duration': '3-5 minutes',
-            'video_summary': 'Educational video demonstrating key concepts',
-            'video_status': 'completed'
-        }
-    elif content_type == 'knowledge_check':
-        return {
-            'questions': [
-                'What are the main concepts covered in this module?',
-                'How would you apply this knowledge in practice?',
-                'What are the key takeaways from this training?'
-            ],
-            'answers': [
-                'The main concepts include fundamental principles and practical applications.',
-                'Apply this knowledge through structured practice and implementation.',
-                'Key takeaways focus on understanding and practical application.'
-            ],
-            'question_type': 'Multiple Choice',
-            'difficulty_level': 'Intermediate'
-        }
-    elif content_type == 'flashcard':
-        return {
-            'flashcard_front': 'What are the key concepts in this module?',
-            'flashcard_back': f"Key concepts: {module_content[:100]}..." if module_content else "Essential training concepts and practical applications"
-        }
-    elif content_type == 'list':
-        return {
-            'list_items': [
-                'Review module content thoroughly',
-                'Understand key concepts',
-                'Practice implementation',
-                'Apply knowledge in real scenarios'
-            ],
-            'instructions': 'Follow this checklist to master the module content'
-        }
-    elif content_type == 'assignment':
-        return {
-            'assignment_task': f"Complete an assignment based on: {module_content[:100]}..." if module_content else "Apply the concepts learned in this module to a practical scenario.",
-            'deliverables': 'Written analysis and practical demonstration',
-            'evaluation_criteria': 'Understanding of concepts and quality of application'
-        }
-    elif content_type == 'survey':
-        return {
-            'survey_questions': [
-                {'question': 'How would you rate your understanding of this module?', 'type': 'multiple_choice', 'options': ['Excellent', 'Good', 'Fair', 'Needs Improvement']},
-                {'question': 'What aspects need more clarification?', 'type': 'text_area', 'placeholder': 'Describe areas needing clarification'},
-                {'question': 'Which learning methods work best for you?', 'type': 'checkbox', 'options': ['Visual aids', 'Hands-on practice', 'Written materials', 'Video content']}
-            ]
-        }
-    elif content_type == 'accordion':
-        return {
-            'accordion_sections': [
-                {'title': 'Overview', 'content': f"Module overview: {module_content[:100]}..." if module_content else "Comprehensive module overview"},
-                {'title': 'Key Concepts', 'content': 'Essential concepts and principles'},
-                {'title': 'Practical Applications', 'content': 'Real-world application examples'}
-            ]
-        }
-    elif content_type == 'tabs':
-        return {
-            'tab_sections': [
-                {'tab_title': 'Introduction', 'tab_content': f"Introduction: {module_content[:100]}..." if module_content else "Module introduction and objectives"},
-                {'tab_title': 'Content', 'tab_content': 'Main content and learning materials'},
-                {'tab_title': 'Summary', 'tab_content': 'Key takeaways and next steps'}
-            ]
-        }
-    elif content_type == 'image':
-        return {
-            'image_description': f"Visual representation of: {module_content[:100]}..." if module_content else "Professional training diagram or illustration",
-            'image_purpose': 'Visual aid to enhance learning and understanding'
-        }
-    elif content_type == 'file':
-        return {
-            'file_description': f"Reference material for: {module_content[:100]}..." if module_content else "Supplementary training reference material",
-            'file_type': 'PDF Guide'
-        }
-    elif content_type == 'divider':
-        return {
-            'divider_text': 'Module Section Separator'
-        }
-    else:
-        return {
-            'content': f"Content for {content_type}: {module_content[:150]}..." if module_content else f"Professional {content_type} content for training purposes"
-        }
 
 if __name__ == "__main__":
     main() 

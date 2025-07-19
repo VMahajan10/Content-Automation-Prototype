@@ -1,9 +1,2 @@
-Error Type: ImportError
-Error Message: cannot import name 'gemini_generate_complete_pathway' from 'modules.utils' (/Users/mahajans/Gateway Content Automation/modules/utils.py)
-Timestamp: 2025-07-09 15:43:13
-Full Traceback:
-Traceback (most recent call last):
-  File "/Users/mahajans/Gateway Content Automation/app.py", line 1067, in show_training_discovery_page
-    from modules.utils import gemini_generate_complete_pathway, get_parallel_config
-ImportError: cannot import name 'gemini_generate_complete_pathway' from 'modules.utils' (/Users/mahajans/Gateway Content Automation/modules/utils.py)
-
+Error Type: TypeError
+Error Message: gemini_generate_complete_pathway() got an unexpected keyword argument 'enhanced_content'
